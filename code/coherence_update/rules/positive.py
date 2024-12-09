@@ -117,7 +117,7 @@ def roleR_in_invP(r_repr, p_repr):
     """
     r_del = f"{DEL}{r_repr}(X,Y){RULE_SEPARATOR}{r_repr}(X,Y), {DEL}{p_repr}{REQUEST}(Y,X)."
     r_inc = f"{INCOMPATIBLE_UPDATE}(){RULE_SEPARATOR}{INS}{r_repr}{REQUEST}(X,Y), {DEL}{p_repr}{REQUEST}(Y,X)."
-    return [r_del, r_inc]
+    return [r_del, r_inc , r_closure]
 
 
 def roleR_in_invP_closure(r_repr, p_repr, pi_reprs, si_reprs):

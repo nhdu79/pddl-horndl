@@ -1,7 +1,7 @@
 keep_pddl=1
 updates=(1)
-tseitins=(1)
-mode="cea"
+tseitins=(0 1)
+mode="cea_negative"
 # supported: cea/cea_negative/ff
 
 for do_update in ${updates[@]};
