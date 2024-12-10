@@ -114,12 +114,16 @@ class Domain:
         for action in self.actions:
             # Change precondition
             pre = action.precondition
-            not_updating = Not(Fact(UPDATING))
+            updating = Fact(UPDATING)
+            not_updating = Not(updating)
             new_pre = And([pre, not_updating])
             action.precondition = new_pre
             # Change effect
             eff = action.effect
-            action.effect = wrapper(eff)
+            wrapped = wrapper(eff)
+            add_eff = AddEffect(updating)
+            new_eff = ConjunctiveEffect([add_eff, wrapped])
+            action.effect = new_eff
 
         # Construct update action
         a = Action(ACTION_UPDATE_NAME)
@@ -139,7 +143,6 @@ class Domain:
             f_params = p_params[0].elements
             if len(f_params) > len(forall_parameters):
                 forall_parameters = f_params
-
 
             ins_a = INS + parse_name(predicate.name)
             del_a = DEL + parse_name(predicate.name)
@@ -180,7 +183,8 @@ class Domain:
 
         effects = ConjunctiveEffect(elements)
         forall = ForallEffect(forall_parameters, effects)
+        conjuctive_eff = ConjunctiveEffect([forall, DelEffect(updating)])
         # a.effect = effects
-        a.effect = forall
+        a.effect = conjuctive_eff
         self.actions.append(a)
         self.predicates.extend(new_preds)
