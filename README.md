@@ -60,9 +60,10 @@ The following software is required for a complete run of the pipeline written in
 ## Mapping from Benchmark names in Thesis to folder names:
 
 * Cats => cat
+* CatsOG => catOG
 * Elevator => elevator
 * TPSA => order
-* Robot => robot (No result yet)
+* Robot => robot
 * VTA => trip
 * VTA-Roles => tripv2
 * TaskAssign => task
