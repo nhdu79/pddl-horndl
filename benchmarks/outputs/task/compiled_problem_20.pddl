@@ -12,5 +12,5 @@
        (designer q)
        (developer r)
        (developer s))
-(:goal (and (AUX239) (not (incompatible_update))))
+(:goal (and (AUX80) (not (incompatible_update))))
 )

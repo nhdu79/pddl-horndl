@@ -7,6 +7,20 @@ from update_runner import Timer
 
 AUX_PREDICATE_NAME = "AUX"
 
+def get_params(el):
+    try:
+        if isinstance(el, pddl.Not):
+            return get_params(el.element)
+        if isinstance(el, pddl.Comparison):
+            return get_params(el.left) + get_params(el.right)
+        if isinstance(el, pddl.SimpleFExpression):
+            return [el.expression]
+        # if isinstance(el, pddl.FExpression):
+        #     return get_params(el.elements)
+        return el.parameters
+    except AttributeError:
+        breakpoint()
+
 class Tseitin:
     def __init__(self,
                  domain,
@@ -49,11 +63,9 @@ class Tseitin:
 
     def _create_shortcuts_all(self, formula, par):
         if isinstance(formula, (pddl.Exists, pddl.Or)):
-            new_form = self._create_shortcuts_disjunction(formula, par)
-            return new_form
+            return self._create_shortcuts_disjunction(formula, par)
         if isinstance(formula, (pddl.Forall, pddl.And)):
-            new_form  = self._create_shortcuts_conjunction(formula, par)
-            return new_form
+            return self._create_shortcuts_conjunction(formula, par)
         return formula
 
     def _create_shortcuts_disjunction(self, formula, par):
@@ -68,8 +80,14 @@ class Tseitin:
             return pddl.Or(shortcuts)
         if isinstance(formula, (pddl.Forall, pddl.And)):
             new_form = self._create_shortcuts_conjunction(formula, par)
-            new_par = new_form.parameters
-            return self._create_shortcut(new_form, new_par)
+            if hasattr(new_form, "parameters"):
+                new_par = new_form.parameters
+            else:
+                pars = [*map(get_params, new_form.elements)]
+                new_par = [item for sublist in pars for item in sublist]
+            pred = self._create_shortcut(new_form, new_par)
+            fact = pddl.Fact(pred.name, [tl.elements[0] for tl in pred.parameters])
+            return fact
         return formula
 
     def _create_shortcuts_conjunction(self, formula, par):
@@ -84,20 +102,34 @@ class Tseitin:
             return pddl.And(shortcuts)
         if isinstance(formula, (pddl.Exists, pddl.Or)):
             new_form = self._create_shortcuts_disjunction(formula, par)
-            new_par = new_form.parameters
-            return self._create_shortcut(new_form, new_par)
+            if hasattr(new_form, "parameters"):
+                new_par = new_form.parameters
+            else:
+                pars = [*map(get_params, new_form.elements)]
+                new_par = [item for sublist in pars for item in sublist]
+            pred = self._create_shortcut(new_form, new_par)
+            fact = pddl.Fact(pred.name, [tl.elements[0] for tl in pred.parameters])
+            return fact
         return formula
 
     def _create_shortcut(self, formula, par):
+        if isinstance(formula, pddl.Fact):
+            return formula
         name = AUX_PREDICATE_NAME + str(self._derived_predicates_count)
         self._derived_predicates_count += 1
         vars = formula.free_vars()
         params = []
         for var in vars:
             for typed_list in reversed(par):
-                if var in typed_list.elements:
-                    params.append(pddl.TypedList([var], typed_list.type))
-                    break
+                if hasattr(typed_list, "elements"):
+                    if var in typed_list.elements:
+                        params.append(pddl.TypedList([var], typed_list.type))
+                        break
+                else:
+                    if var == typed_list:
+                        params.append(pddl.TypedList([var]))
+                        break
+
         pred = pddl.Predicate(name, params)
         dp = pddl.DerivedPredicate(pred, formula)
         self.domain.predicates.append(pred)
@@ -117,8 +149,8 @@ if __name__ == "__main__":
     p = argparse.ArgumentParser()
     p.add_argument("domain")
     p.add_argument("problem")
-    p.add_argument("--out-domain", "-d", default="one-time/out_domain_test.pddl")
-    p.add_argument("--out-problem", "-p", default="one-time/out_problem_test.pddl")
+    p.add_argument("--out-domain", "-d", default="one-time/outputs/domain_1_test.pddl")
+    p.add_argument("--out-problem", "-p", default="one-time/outputs/problem_1_test.pddl")
     p.add_argument("--verbose", "-v", default=False, action='store_true')
     p.add_argument("--keep-name", "-n", default=False, action='store_true')
     p.add_argument("--output-csv", default="results.csv")
