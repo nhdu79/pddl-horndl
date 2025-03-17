@@ -27,20 +27,15 @@ def compiled_problem(task, i):
 
 heuristics = [
     # {"variable": "cea", "args": "", "name": "cea"},
-    {"variable": "cea", "args": "axioms=approximate_negative", "name": "cea_approximate_negative"},
-    # {"variable": "ff", "args": "", "name": "hff"},
-    # {"variable": "ff", "args": "axioms=approximate_negative", "name": "hff_approximate_negative"},
+    # {"variable": "cea", "args": "axioms=approximate_negative", "name": "cea_approximate_negative"},
+    {"variable": "ff", "args": "", "name": "hff"},
+    {"variable": "ff", "args": "axioms=approximate_negative", "name": "hff_approximate_negative"},
     # {"variable": "cg", "args": "", "name": "cg"},
     # {"variable": "cg", "args": "axioms=approximate_negative", "name": "cg_approximate_negative"},
 ]
 
-# pddl = [("cat",17), ("elevator",22), ("task", 15), ("order", 5), ("order", 10), ("order", 15), ("trip", 5), ("trip", 10), ("trip", 15), ("tripv2",5), ("tripv2",10),("tripv2", 15), ("robot", 10), ("robot", 11), ("robot", 12)]
-
 pddl = [
-    # ("cat",18), ("cat",19), ("cat",20),
-    ("catOG",15), ("catOG",16), ("catOG",17),
-    # ("elevator",20), ("elevator",21),
-    # ("task",13), ("task",14)
+    ("robot", 18), ("robot", 19), ("robot", 20)
 ]
 
 if __name__ == "__main__":
@@ -59,7 +54,7 @@ if __name__ == "__main__":
                 dom = result_domain(task, nr)
                 prob = result_problem(task, nr)
                 start = time.time()
-                command = f"timeout 50 {fastdownward} {dom} {prob} --search {arg}"
+                command = f"timeout 600 {fastdownward} {dom} {prob} --search {arg}"
                 if command in timeouts:
                     with open(file, 'a') as f:
                         f.write(f"{h['name']},{dom},50\n")
@@ -80,7 +75,7 @@ if __name__ == "__main__":
                 com_d = compiled_domain(task, nr)
                 com_p = compiled_problem(task, nr)
                 start = time.time()
-                command = f"timeout 50 {fastdownward} {com_d} {com_p} --search '{arg}'"
+                command = f"timeout 600 {fastdownward} {com_d} {com_p} --search '{arg}'"
                 if command in timeouts:
                     # write timeout
                     with open(file, 'a') as f:

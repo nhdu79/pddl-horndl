@@ -68,46 +68,36 @@ class Tseitin:
             return self._create_shortcuts_conjunction(formula, par)
         return formula
 
-    def _create_shortcuts_disjunction(self, formula, par):
+    def _create_shortcuts_disjunction(self, formula, free_parameters):
         if isinstance(formula, pddl.Exists):
-            pred = self._create_shortcuts_disjunction(formula.formula, par + formula.parameters)
-            return pddl.Exists(formula.parameters, pred)
+            new_formula = self._create_shortcuts_disjunction(formula.formula, free_parameters + formula.parameters)
+            return pddl.Exists(formula.parameters, new_formula)
         if isinstance(formula, pddl.Or):
-            shortcuts = []
+            new_conjuncts = []
             for element in formula.elements:
-                pred = self._create_shortcuts_disjunction(element, par)
-                shortcuts.append(pred)
-            return pddl.Or(shortcuts)
+                pred = self._create_shortcuts_disjunction(element, free_parameters)
+                new_conjuncts.append(pred)
+            return pddl.Or(new_conjuncts)
         if isinstance(formula, (pddl.Forall, pddl.And)):
-            new_form = self._create_shortcuts_conjunction(formula, par)
-            if hasattr(new_form, "parameters"):
-                new_par = new_form.parameters
-            else:
-                pars = [*map(get_params, new_form.elements)]
-                new_par = [item for sublist in pars for item in sublist]
-            pred = self._create_shortcut(new_form, new_par)
-            fact = pddl.Fact(pred.name, [tl.elements[0] for tl in pred.parameters])
+            new_form = self._create_shortcuts_conjunction(formula, free_parameters)
+            shortcut = self._create_shortcut(new_form, free_parameters)
+            fact = pddl.Fact(shortcut.name, [tl.elements[0] for tl in shortcut.parameters])
             return fact
         return formula
 
-    def _create_shortcuts_conjunction(self, formula, par):
+    def _create_shortcuts_conjunction(self, formula, free_parameters):
         if isinstance(formula, pddl.Forall):
-            pred = self._create_shortcuts_conjunction(formula.formula, par + formula.parameters)
+            pred = self._create_shortcuts_conjunction(formula.formula, free_parameters + formula.parameters)
             return pddl.Forall(formula.parameters, pred)
         if isinstance(formula, pddl.And):
             shortcuts = []
             for element in formula.elements:
-                pred = self._create_shortcuts_conjunction(element, par)
+                pred = self._create_shortcuts_conjunction(element, free_parameters)
                 shortcuts.append(pred)
             return pddl.And(shortcuts)
         if isinstance(formula, (pddl.Exists, pddl.Or)):
-            new_form = self._create_shortcuts_disjunction(formula, par)
-            if hasattr(new_form, "parameters"):
-                new_par = new_form.parameters
-            else:
-                pars = [*map(get_params, new_form.elements)]
-                new_par = [item for sublist in pars for item in sublist]
-            pred = self._create_shortcut(new_form, new_par)
+            new_form = self._create_shortcuts_disjunction(formula, free_parameters)
+            pred = self._create_shortcut(new_form, free_parameters)
             fact = pddl.Fact(pred.name, [tl.elements[0] for tl in pred.parameters])
             return fact
         return formula
@@ -121,14 +111,9 @@ class Tseitin:
         params = []
         for var in vars:
             for typed_list in reversed(par):
-                if hasattr(typed_list, "elements"):
-                    if var in typed_list.elements:
-                        params.append(pddl.TypedList([var], typed_list.type))
-                        break
-                else:
-                    if var == typed_list:
-                        params.append(pddl.TypedList([var]))
-                        break
+                if var in typed_list.elements:
+                    params.append(pddl.TypedList([var], typed_list.type))
+                    break
 
         pred = pddl.Predicate(name, params)
         dp = pddl.DerivedPredicate(pred, formula)
@@ -149,8 +134,8 @@ if __name__ == "__main__":
     p = argparse.ArgumentParser()
     p.add_argument("domain")
     p.add_argument("problem")
-    p.add_argument("--out-domain", "-d", default="one-time/outputs/domain_1_test.pddl")
-    p.add_argument("--out-problem", "-p", default="one-time/outputs/problem_1_test.pddl")
+    p.add_argument("--out-domain", "-d", default="one-time/outputs/domain_test.pddl")
+    p.add_argument("--out-problem", "-p", default="one-time/outputs/problem_test.pddl")
     p.add_argument("--verbose", "-v", default=False, action='store_true')
     p.add_argument("--keep-name", "-n", default=False, action='store_true')
     p.add_argument("--output-csv", default="results.csv")

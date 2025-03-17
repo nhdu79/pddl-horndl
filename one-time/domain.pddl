@@ -1,17 +1,16 @@
 (define (domain Test)
 (:constants
-  a - object)
+  a - object
+  b - object
+  c - object)
 (:predicates
   (preda ?x - object)
   (predb ?x - object)
   (predc ?x - object)
-  (predd ?x - object))
-(:derived (predd ?x0 - object)
-          (and (preda ?x0) (or (predb ?x0) (forall (?x1 - object) (predc ?x1)))))
-(:action add
-  :parameters (?x - object)
-  :precondition (and (not (preda ?x)) (forall (?x1 - object) (predc ?x1)))
-  :effect (when (exists (?x - object) (and (preda ?x) (or (predb ?x) (predc ?x))))
-                  (and (preda ?x) (predb ?x)))
-            )
+  (predd ?x - object)
+  (prede ?x - object)
+  (predf ?x - object)
+  (predg ?x - object))
+(:derived (predg ?x - object)
+          (or (and (preda ?x) (exists (?y - object) (or (predb ?y) (predc ?x)))) (and (predd ?x) (prede ?x))))
 )
