@@ -74,7 +74,7 @@ The following software is required for a complete run of the pipeline written in
   * updating as action instead of derived predicate
   * compatible_update instead of incompatible_update
 
-* Branch update_v25 (Variant 2 in thesis)
+* Branch update_v2 (Variant 2 in thesis)
   * updating as derived predicate
   * compatible_update instead of incompatible_update
 
