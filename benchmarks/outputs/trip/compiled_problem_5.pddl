@@ -18,5 +18,5 @@
        (directlyafterobj al am)
        (directlyafterobj am an)
        (directlyafterobj an ao))
-(:goal (and (AUX53) (compatible_update)))
+(:goal (and (AUX22) (compatible_update)))
 )

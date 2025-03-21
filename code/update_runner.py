@@ -2,7 +2,8 @@ import os
 import re
 import time
 import subprocess
-from datalog import Rule, Atom, Negated
+from datalog import Negated, Equality
+from planning.logic import Forall, Or, And, Comparison, Fact, SimpleFExpression, DerivedPredicate, Predicate
 from utils.functions import read_predicates, read_unary_predicate
 from coherence_update.classes.tbox import TBox
 from coherence_update.classes.inclusion import INCLUSION_TYPES_ORDER
@@ -10,7 +11,7 @@ from coherence_update.update import CohrenceUpdate
 from utils.functions import get_repr
 from coherence_update.rules.atomic import build_del_concept_and_incompatible_rules_for_atomic_concepts, build_del_role_and_incompatible_rules_for_roles
 from coherence_update.rules.negative import atomicA_closure, roleP_closure
-from coherence_update.rules.symbols import COMPATIBLE_UPDATE, INCOMPATIBLE_UPDATE, UPDATE_AUX
+from coherence_update.rules.symbols import COMPATIBLE_UPDATE, INCOMPATIBLE_UPDATE
 
 TMP_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'tmp')
 RULES_FILE_NAME = '_update_rules.txt'
@@ -98,34 +99,51 @@ class UpdateRunner:
         return set([get_repr(uri) for uri in atomic])
 
 
-class Transformer:
-    def __init__(self, rules):
-        self.rules = rules
+def transform_incompatible_update(rules):
+    """
+        rules: list of Datalog rules
+        return: list of filtered Datalog rules, compatible_update
+    """
+    new_rules = []
+    cond = []
+    params = []
+    for rule in rules:
+        if rule.head.name == INCOMPATIBLE_UPDATE:
+            disjuctions = []
+            for literal in rule.tail:
+                if isinstance(literal, Negated):
+                    if isinstance(literal.element, Equality):
+                        left_exp = SimpleFExpression(literal.element.left)
+                        right_exp = SimpleFExpression(literal.element.right)
+                        f = Comparison("=", left_exp, right_exp)
+                        neg = f.negate()
+                        if len(params) < 2:
+                            params = [f.left, f.right]
+                    else:
+                        raise ValueError("Unknown literal type: %r" % literal)
+                elif isinstance(literal, Equality):
+                    left_exp = SimpleFExpression(literal.left)
+                    right_exp = SimpleFExpression(literal.right)
+                    f = Comparison("=", left_exp, right_exp)
+                    neg = f.negate()
+                    if len(params) < 2:
+                        params = [f.left, f.right]
+                else:
+                    f = Fact(literal.name, [*literal.parameters])
+                    neg = f.negate()
+                    if len(params) < len(f.parameters):
+                        params = f.parameters
+                disjuctions.append(neg)
+            cond.append(Or(disjuctions))
+        else:
+            new_rules.append(rule)
 
-    def __call__(self):
-        new_rules = []
-        new_predicates = []
-        # Add aux rules for compatible_update
-        for rule in self.rules:
-            if rule.head.name == INCOMPATIBLE_UPDATE:
-                suffix = len(new_predicates) + 1
-                aux_name = UPDATE_AUX + str(suffix)
-                r = Rule()
-                params = []
-                r.head = Atom(aux_name, params)
-                r.tail = rule.tail
-                new_rules.append(r)
-                new_predicates.append(aux_name)
-            else:
-                new_rules.append(rule)
-        # Construct compatible update
-        compatible_update = Rule()
-        compatible_update.head = Atom(COMPATIBLE_UPDATE, [])
-        compatible_update.tail = [Negated(Atom(aux, [])) for aux in new_predicates]
-        new_rules.append(compatible_update)
-        new_predicates.append(COMPATIBLE_UPDATE)
+    cond = And(cond)
+    cond = Forall(params, cond)
+    predicate = Predicate(COMPATIBLE_UPDATE, [])
+    compatible_update = DerivedPredicate(predicate, cond)
 
-        return new_rules
+    return new_rules, compatible_update
 
 
 if __name__ == '__main__':

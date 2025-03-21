@@ -23,5 +23,5 @@
        (directlyafterobj aq ar)
        (directlyafterobj ar as)
        (directlyafterobj as at))
-(:goal (and (AUX88) (compatible_update)))
+(:goal (and (AUX41) (compatible_update)))
 )

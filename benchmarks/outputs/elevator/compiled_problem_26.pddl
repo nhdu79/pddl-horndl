@@ -37,5 +37,5 @@
        (next av aw)
        (next aw az)
        (liftat ag))
-(:goal (and (forall (?x - object) (AUX82 ?x)) (not (incompatible_update))))
+(:goal (and (compatible_update) (forall (?x - object) (AUX34 ?x))))
 )

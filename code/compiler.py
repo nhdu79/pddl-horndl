@@ -8,7 +8,7 @@ from clipper import Clipper
 from coherence_update.rules.symbols import DEL, INCOMPATIBLE_UPDATE, INS, UPDATING, COMPATIBLE_UPDATE, UPDATE_AUX
 import datalog
 import pddl
-from update_runner import Timer, UpdateRunner, Transformer
+from update_runner import Timer, UpdateRunner, transform_incompatible_update
 from utils.functions import parse_name
 
 QUERY_PREDICATE_NAME = "QUERY"
@@ -276,10 +276,6 @@ class Compilation:
             else:
                 self._datalog_rules.append(rule)
 
-        if self.update_runner:
-            transformer = Transformer(self._datalog_rules)
-            self._datalog_rules = transformer()
-
         if self.filter_duplicates:
             self._datalog_rules = list(self._datalog_rules)
 
@@ -318,6 +314,11 @@ class Compilation:
 
     def _compile_datalog_rules(self):
         self.predicates_in_ontology = set(self.ucq_collector.queried_predicates)
+        if self.update_runner:
+            self._datalog_rules, compatible_update = transform_incompatible_update(self._datalog_rules)
+            self.domain.derived_predicates.append(compatible_update)
+        # for rule in self._datalog_rules:
+        #     print(rule.__str__())
         for rule in self._datalog_rules:
             subst = {}
             num_ext = 0
@@ -385,6 +386,7 @@ class Compilation:
                 cond = pddl.Exists(
                         get_parameter_list(num_ext, "?y%d"),
                         cond)
+
             self.domain.derived_predicates.append(pddl.DerivedPredicate(predicate, cond))
 
     def _unprime_conditions_and_enforce_consistency(self):
