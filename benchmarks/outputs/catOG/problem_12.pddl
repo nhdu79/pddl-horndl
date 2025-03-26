@@ -21,5 +21,5 @@
        (contains u r)
        (contains h p)
        (contains x v))
-(:goal (and (forall (?x - object) (or (disarmed ?x) (not (DATALOG_PACKAGE ?x)))) (not (incompatible_update))))
+(:goal (and (forall (?x - object) (or (disarmed ?x) (not (DATALOG_PACKAGE ?x)))) (not (DATALOG_INCONSISTENT))))
 )

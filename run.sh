@@ -1,7 +1,7 @@
 keep_pddl=1
 updates=(1)
-tseitins=(0)
-mode="cea_negative"
+tseitins=(0 1)
+mode="ff"
 # supported: cea/cea_negative/ff/ff_negative
 
 for do_update in ${updates[@]};
@@ -24,8 +24,8 @@ do
       fi
     fi
 
-    tasks=(cat catOG elevator task order trip tripv2 robot catOG)
-    # tasks=(catOG)
+    tasks=(cat elevator robot)
+    # tasks=(cat)
     for task in ${tasks[@]};
     do
       if [ $task == "cat" ] || [ $task == "catOG" ]; then
@@ -40,13 +40,21 @@ do
 
       prefix="benchmarks/$task"
       ## path to a (patched) clipper
-      clipper="/home/zinzin2312/repos/clipper/clipper-distribution/target/clipper/clipper.sh"
-      nmo="/home/zinzin2312/repos/nemo/target/release/nmo"
+
+      ## Desktop
+      # clipper="/home/zinzin2312/repos/clipper/clipper-distribution/target/clipper/clipper.sh"
+      # nmo="/home/zinzin2312/repos/nemo/target/release/nmo"
+      # fastdownward="/home/zinzin2312/repos/downward/fast-downward.py"
+
+      ## Laptop
+      clipper="/Users/duynhu/repos/clipper/clipper-distribution/target/clipper/clipper.sh"
       rls="code/nemo/t_closure.rls"
-      fastdownward="/home/zinzin2312/repos/downward/fast-downward.py"
+      fastdownward="/Users/duynhu/repos/downward/fast-downward.py"
+
       # path to compiler.py
       compiler="code/compiler.py"
-      tseitin="code/tseitin.py"
+      tseitin="code/new_tseitin.py"
+      rls="code/nemo/t_closure.rls"
 
       for i in ${elements[@]};
       do
@@ -98,17 +106,17 @@ do
         echo "========================== Solving $task $i with $mode heuristic; do_update=$do_update; do_tseitin=$do_tseitin; keep_pddl=$keep_pddl =========================="
 
         if [ $mode == "cea" ]; then
-          planner_output=$(timeout 600 $fastdownward $output_domain $output_problem --search "let(hcea,cea(),lazy_greedy([hcea],preferred=[hcea]))">&1)
+          planner_output=$($fastdownward $output_domain $output_problem --search "let(hcea,cea(),lazy_greedy([hcea],preferred=[hcea]))">&1)
         elif [ $mode == "ff" ]; then
-          planner_output=$(timeout 600 $fastdownward $output_domain $output_problem --search "let(hff,ff(),lazy_greedy([hff],preferred=[hff]))">&1)
+          planner_output=$($fastdownward $output_domain $output_problem --search "let(hff,ff(),lazy_greedy([hff],preferred=[hff]))">&1)
         elif [ $mode == "cea_negative" ]; then
-          planner_output=$(timeout 600 $fastdownward $output_domain $output_problem --search "let(hcea,cea(axioms=approximate_negative),lazy_greedy([hcea],preferred=[hcea]))">&1)
+          planner_output=$($fastdownward $output_domain $output_problem --search "let(hcea,cea(axioms=approximate_negative),lazy_greedy([hcea],preferred=[hcea]))">&1)
         elif [ $mode == "ff_negative" ]; then
-          planner_output=$(timeout 600 $fastdownward $output_domain $output_problem --search "let(hff,ff(axioms=approximate_negative),lazy_greedy([hff],preferred=[hff]))">&1)
+          planner_output=$($fastdownward $output_domain $output_problem --search "let(hff,ff(axioms=approximate_negative),lazy_greedy([hff],preferred=[hff]))">&1)
         else
-          planner_output=$(timeout 600 $fastdownward $output_domain $output_problem --search "let(hcea,cea(),lazy_greedy([hcea],preferred=[hcea]))">&1)
+          planner_output=$($fastdownward $output_domain $output_problem --search "let(hcea,cea(),lazy_greedy([hcea],preferred=[hcea]))">&1)
         fi
-        python helpers.py --output "$planner_output" --csv "$csv"
+        python3 helpers.py --output "$planner_output" --csv "$csv"
 
         echo "" >> $csv
 

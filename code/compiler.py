@@ -257,7 +257,7 @@ class Compilation:
         self._duplicate_rules = set()
         self._unimportant_rules = []
         inconsistent_atom = datalog.Atom(INCONSISTENCY_PREDICATE_NAME, [])
-        for idx, dlr in enumerate(datalog_rules):
+        for _, dlr in enumerate(datalog_rules):
             if len(dlr.strip()) == 0:
                 continue
             rule = datalog.parse_rule(dlr)

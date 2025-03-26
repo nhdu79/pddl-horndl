@@ -48,5 +48,5 @@
        (next bf bg)
        (next bg bh)
        (liftat ay))
-(:goal (and (forall (?x - object) (or (served ?x) (not (DATALOG_PASSENGER ?x)))) (not (incompatible_update))))
+(:goal (and (forall (?x - object) (or (served ?x) (not (DATALOG_PASSENGER ?x)))) (not (DATALOG_INCONSISTENT))))
 )

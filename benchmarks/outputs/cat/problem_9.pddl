@@ -15,5 +15,5 @@
        (contains j a)
        (contains r d)
        (contains l g))
-(:goal (and (forall (?x - object) (or (disarmed ?x) (not (DATALOG_PACKAGE ?x)))) (not (incompatible_update))))
+(:goal (and (forall (?x - object) (or (disarmed ?x) (not (DATALOG_PACKAGE ?x)))) (not (DATALOG_INCONSISTENT))))
 )

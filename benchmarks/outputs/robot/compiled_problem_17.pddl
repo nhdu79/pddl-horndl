@@ -5,5 +5,5 @@
        (leftof16 robot)
        (aboveof0 robot)
        (belowof16 robot))
-(:goal (and (DATALOG_QUERY64) (not (incompatible_update))))
+(:goal (and (DATALOG_QUERY64) (not (DATALOG_INCONSISTENT))))
 )

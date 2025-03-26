@@ -27,5 +27,5 @@
        (contains ad ag)
        (contains aj ai)
        (contains bb ah))
-(:goal (and (forall (?x - object) (or (disarmed ?x) (not (DATALOG_PACKAGE ?x)))) (not (incompatible_update))))
+(:goal (and (forall (?x - object) (or (disarmed ?x) (not (DATALOG_PACKAGE ?x)))) (not (DATALOG_INCONSISTENT))))
 )

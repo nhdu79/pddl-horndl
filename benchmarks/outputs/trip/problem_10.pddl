@@ -23,5 +23,5 @@
        (directlyafterobj aq ar)
        (directlyafterobj ar as)
        (directlyafterobj as at))
-(:goal (and (exists (?receipt ?fullTrip - object) (DATALOG_QUERY0 ?fullTrip ?receipt)) (not (incompatible_update))))
+(:goal (and (exists (?receipt ?fullTrip - object) (DATALOG_QUERY0 ?fullTrip ?receipt)) (not (DATALOG_INCONSISTENT))))
 )

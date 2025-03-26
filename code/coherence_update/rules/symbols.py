@@ -9,3 +9,4 @@ INS = "ins" + WORD_SEPARATOR
 DEL = "del" + WORD_SEPARATOR
 REQUEST = WORD_SEPARATOR + "request"
 CLOSURE = WORD_SEPARATOR + "closure"
+END = ""
