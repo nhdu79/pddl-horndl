@@ -1,0 +1,30 @@
+Subject: [PATCH] support multiple queries with the same body
+---
+Index: clipper-reasoner/src/main/java/org/semanticweb/clipper/hornshiq/queryanswering/QAHornSHIQ.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/clipper-reasoner/src/main/java/org/semanticweb/clipper/hornshiq/queryanswering/QAHornSHIQ.java b/clipper-reasoner/src/main/java/org/semanticweb/clipper/hornshiq/queryanswering/QAHornSHIQ.java
+--- a/clipper-reasoner/src/main/java/org/semanticweb/clipper/hornshiq/queryanswering/QAHornSHIQ.java	(revision b81d0c84eb5853cb31a38260bd53fb35436f0fa2)
++++ b/clipper-reasoner/src/main/java/org/semanticweb/clipper/hornshiq/queryanswering/QAHornSHIQ.java	(date 1743073292475)
+@@ -173,8 +173,8 @@
+ 	private void reduceRewrittenQueriesToDatalog(TBoxReasoner tb) throws IOException {
+ 		long starCountingRelatedRule = System.currentTimeMillis();
+ 
+-		Set<CQ> ucq = new HashSet<CQ>(rewrittenQueries);
+-		QueriesRelatedRules relatedRules = new QueriesRelatedRules(clipperOntology, ucq, cqFormatter);
++		Collection<CQ> ucq = rewrittenQueries;
++		QueriesRelatedRules relatedRules = new QueriesRelatedRules(clipperOntology, new HashSet<>(ucq), cqFormatter);
+ 		relatedRules.setCoreImps(tb.getImpContainer().getImps());
+ 		relatedRules.setCoreEnfs(tb.getEnfContainer().getEnfs());
+ 		relatedRules.countUCQRelatedRules();
+@@ -214,7 +214,7 @@
+ 	 * @author Steffen Breuer
+ 	 **/
+ 	public Collection<String> rewriteCQs(Collection<CQ> rawQueries) {
+-		Collection<CQ> rewrittenQueries = new HashSet<>();
++		Collection<CQ> rewrittenQueries = new ArrayList<>();
+ 
+ 		try {
+ 			preprocessOntologies();

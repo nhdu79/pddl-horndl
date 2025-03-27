@@ -2,7 +2,7 @@ import os
 import re
 import subprocess
 
-rls_file_path = "fact_counter.rls"
+rls_file_path = "code/nemo/fact_counter.rls"
 nmo="/home/zinzin2312/repos/nemo/target/release/nmo"
 ontology_folder = "/home/zinzin2312/repos/pddl-horndl/benchmarks/robot/original/"
 

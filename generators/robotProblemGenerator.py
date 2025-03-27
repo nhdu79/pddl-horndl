@@ -120,7 +120,7 @@ def generate_planning_domain(columns, rows, filename, onto):
 	for column in range(columns-1):
 		#planning_domain += "\t\t\n"
 		planning_domain += "\t\t\t(when (mko (and (RightOf"+str(column)+" ?x) (LeftOf"+str(column+1)+" ?x)))\n"
-		planning_domain += "\t\t\t\t(and (Column"+str(column)+" ?x))\n"
+		planning_domain += "\t\t\t\t(and (Column"+str(column+1)+" ?x))\n"
 		#~ planning_domain += "\t\t:delete ((Column"+str(column)+" ?x))\n"
 		planning_domain += "\t\t\t\t)\n"
 
@@ -290,8 +290,14 @@ def generate_planning_problem(rightOf, leftOf, aboveOf, belowOf, column, row, fi
 	output_file.close()
 
 if __name__ == '__main__':
-	for t in range(50,210,10):
-		columns = t
-		rows = t
-		generate_planning_domain(columns = columns, rows = rows, filename = "generated/robotDomain"+ str(t) +".pddl",onto = "generated/TTL"+ str(t) +".owl")
-		generate_planning_problem(rightOf = 1, leftOf = columns-1, aboveOf = 0, belowOf = rows-1, column = 2, row = 1, filename = "generated/robotProblem" + str(t) +".pddl")
+	# for t in range(50,210,10):
+	# 	columns = t
+	# 	rows = t
+    # 	generate_planning_domain(columns = columns, rows = rows, filename = "generated/robotDomain"+ str(t) +".pddl",onto = "generated/TTL"+ str(t) +".owl")
+    # 	generate_planning_problem(rightOf = 1, leftOf = columns-1, aboveOf = 0, belowOf = rows-1, column = 2, row = 1, filename = "generated/robotProblem" + str(t) +".pddl")
+    t = 3
+    columns = t
+    rows = t
+    generate_planning_domain(columns = columns, rows = rows, filename = "generated/robotDomain"+ str(t) +".pddl",onto = "generated/TTL"+ str(t) +".owl")
+    generate_planning_problem(rightOf = 1, leftOf = columns-1, aboveOf = 0, belowOf = rows-1, column = 2, row = 1, filename = "generated/robotProblem" + str(t) +".pddl")
+

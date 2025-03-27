@@ -5,3 +5,5 @@
 __pycache__/
 tmp/
 benchmarks/outputs/solutions/*
+results.csv
+sas_plan

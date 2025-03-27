@@ -131,7 +131,7 @@ class Compilation:
             new_cond = eff.condition.apply(typ, fn)
             new_eff = eff.effect.apply(pddl.ConditionalEffect, ce_wrapper)
             return pddl.ConditionalEffect(new_cond, new_eff)
-        for i, deriv in enumerate(self.domain.derived_predicates):
+        for _, deriv in enumerate(self.domain.derived_predicates):
             deriv.condition = deriv.condition.apply(typ, fn)
         for action in self.domain.actions:
             action.precondition = action.precondition.apply(typ, fn)
