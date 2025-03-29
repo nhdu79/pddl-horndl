@@ -26,5 +26,5 @@
        (next n q)
        (next q r)
        (liftat c))
-(:goal (and (forall (?x - object) (AUX2 ?x)) (not (DATALOG_INCONSISTENT))))
+(:goal (and (forall (?x - object) (AUX35 ?x)) (not (incompatible_update))))
 )

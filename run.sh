@@ -1,6 +1,6 @@
 keep_pddl=1
 updates=(1)
-tseitins=(0 1)
+tseitins=(0)
 mode="ff"
 # supported: cea/cea_negative/ff/ff_negative
 
@@ -25,7 +25,7 @@ do
     fi
 
     tasks=(cat elevator robot)
-    # tasks=(cat)
+    # tasks=(robot)
     for task in ${tasks[@]};
     do
       if [ $task == "cat" ] || [ $task == "catOG" ]; then
@@ -42,14 +42,14 @@ do
       ## path to a (patched) clipper
 
       ## Desktop
-      # clipper="/home/zinzin2312/repos/clipper/clipper-distribution/target/clipper/clipper.sh"
-      # nmo="/home/zinzin2312/repos/nemo/target/release/nmo"
-      # fastdownward="/home/zinzin2312/repos/downward/fast-downward.py"
+      clipper="/home/zinzin2312/repos/clipper/clipper-distribution/target/clipper/clipper.sh"
+      nmo="/home/zinzin2312/repos/nemo/target/release/nmo"
+      fastdownward="/home/zinzin2312/repos/downward/fast-downward.py"
 
       ## Laptop
-      clipper="/Users/duynhu/repos/clipper/clipper-distribution/target/clipper/clipper.sh"
-      rls="code/nemo/t_closure.rls"
-      fastdownward="/Users/duynhu/repos/downward/fast-downward.py"
+      # clipper="/Users/duynhu/repos/clipper/clipper-distribution/target/clipper/clipper.sh"
+      # nmo="/Users/duynhu/.appimages/nemo_v0.7.1_aarch64-apple-darwin/nmo"
+      # fastdownward="/Users/duynhu/repos/downward/fast-downward.py"
 
       # path to compiler.py
       compiler="code/compiler.py"

@@ -37,5 +37,5 @@
        (next av aw)
        (next aw az)
        (liftat ag))
-(:goal (and (forall (?x - object) (AUX2 ?x)) (not (DATALOG_INCONSISTENT))))
+(:goal (and (forall (?x - object) (AUX35 ?x)) (not (incompatible_update))))
 )
