@@ -39,5 +39,5 @@
        (contains am bj)
        (contains bn ao)
        (contains bt be))
-(:goal (and (forall (?x - object) (AUX2 ?x)) (not (DATALOG_INCONSISTENT))))
+(:goal (and (forall (?x - object) (AUX16 ?x)) (not (incompatible_update))))
 )

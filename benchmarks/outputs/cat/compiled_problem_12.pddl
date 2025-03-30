@@ -21,5 +21,5 @@
        (contains u r)
        (contains h p)
        (contains x v))
-(:goal (and (forall (?x - object) (AUX2 ?x)) (not (DATALOG_INCONSISTENT))))
+(:goal (and (forall (?x - object) (AUX16 ?x)) (not (incompatible_update))))
 )

@@ -1,4 +1,0 @@
-benchmark name,t closure,domain extension,collecting queries,rewriting,update rules const,gen derived preds,finalize,total complation, solution, size(KB)
-robot 3,0.049963,0.000396,0.000882,0.371864,0.000445,0.005438,0.001512,0.380837,0.16s,10864
-robot 4,0.048520,0.000444,0.000747,0.389145,0.000581,0.008712,0.002451,0.402388,14.34s,21812
-robot 5,0.050169,0.000582,0.001042,0.420740,0.000807,0.012428,0.003750,0.439691,

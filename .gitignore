@@ -7,3 +7,4 @@ tmp/
 benchmarks/outputs/solutions/*
 results.csv
 sas_plan
+csvs/*

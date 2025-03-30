@@ -1,6 +1,6 @@
 keep_pddl=1
 updates=(1)
-tseitins=(0)
+tseitins=(1)
 mode="ff"
 # supported: cea/cea_negative/ff/ff_negative
 
@@ -24,7 +24,7 @@ do
       fi
     fi
 
-    tasks=(cat elevator robot)
+    tasks=(catOG elevator robot task order trip tripv2)
     # tasks=(robot)
     for task in ${tasks[@]};
     do
@@ -105,27 +105,27 @@ do
 
         echo "========================== Solving $task $i with $mode heuristic; do_update=$do_update; do_tseitin=$do_tseitin; keep_pddl=$keep_pddl =========================="
 
-        if [ $mode == "cea" ]; then
-          planner_output=$($fastdownward $output_domain $output_problem --search "let(hcea,cea(),lazy_greedy([hcea],preferred=[hcea]))">&1)
-        elif [ $mode == "ff" ]; then
-          planner_output=$($fastdownward $output_domain $output_problem --search "let(hff,ff(),lazy_greedy([hff],preferred=[hff]))">&1)
-        elif [ $mode == "cea_negative" ]; then
-          planner_output=$($fastdownward $output_domain $output_problem --search "let(hcea,cea(axioms=approximate_negative),lazy_greedy([hcea],preferred=[hcea]))">&1)
-        elif [ $mode == "ff_negative" ]; then
-          planner_output=$($fastdownward $output_domain $output_problem --search "let(hff,ff(axioms=approximate_negative),lazy_greedy([hff],preferred=[hff]))">&1)
-        else
-          planner_output=$($fastdownward $output_domain $output_problem --search "let(hcea,cea(),lazy_greedy([hcea],preferred=[hcea]))">&1)
-        fi
-        python3 helpers.py --output "$planner_output" --csv "$csv"
-
-        echo "" >> $csv
-
-        if [ $keep_pddl -eq 0 ]; then
-          rm -rf $result_domain
-          rm -rf $result_problem
-          rm -rf $tseitin_domain
-          rm -rf $tseitin_problem
-        fi
+        # if [ $mode == "cea" ]; then
+        #   planner_output=$($fastdownward $output_domain $output_problem --search "let(hcea,cea(),lazy_greedy([hcea],preferred=[hcea]))">&1)
+        # elif [ $mode == "ff" ]; then
+        #   planner_output=$($fastdownward $output_domain $output_problem --search "let(hff,ff(),lazy_greedy([hff],preferred=[hff]))">&1)
+        # elif [ $mode == "cea_negative" ]; then
+        #   planner_output=$($fastdownward $output_domain $output_problem --search "let(hcea,cea(axioms=approximate_negative),lazy_greedy([hcea],preferred=[hcea]))">&1)
+        # elif [ $mode == "ff_negative" ]; then
+        #   planner_output=$($fastdownward $output_domain $output_problem --search "let(hff,ff(axioms=approximate_negative),lazy_greedy([hff],preferred=[hff]))">&1)
+        # else
+        #   planner_output=$($fastdownward $output_domain $output_problem --search "let(hcea,cea(),lazy_greedy([hcea],preferred=[hcea]))">&1)
+        # fi
+        # python3 helpers.py --output "$planner_output" --csv "$csv"
+        #
+        # echo "" >> $csv
+        #
+        # if [ $keep_pddl -eq 0 ]; then
+        #   rm -rf $result_domain
+        #   rm -rf $result_problem
+        #   rm -rf $tseitin_domain
+        #   rm -rf $tseitin_problem
+        # fi
       done
     done
   done

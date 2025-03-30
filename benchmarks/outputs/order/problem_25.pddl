@@ -4,5 +4,5 @@
        (requestedservice voipRequest voip)
        (service voip)
        (order voipRequest))
-(:goal (and (exists (?x - object) (invoice ?x)) (not (DATALOG_INCONSISTENT))))
+(:goal (and (exists (?x - object) (invoice ?x)) (not (incompatible_update))))
 )
