@@ -5,5 +5,5 @@
        (leftof4 robot)
        (aboveof0 robot)
        (belowof4 robot))
-(:goal (and (column2 robot) (compatible_update) (row1 robot)))
+(:goal (and (column2 robot) (row1 robot) (not (incompatible_update))))
 )

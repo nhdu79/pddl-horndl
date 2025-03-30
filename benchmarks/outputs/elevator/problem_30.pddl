@@ -43,5 +43,5 @@
        (next ay az)
        (next az bd)
        (liftat ap))
-(:goal (and (compatible_update) (forall (?x - object) (or (served ?x) (not (DATALOG_PASSENGER ?x))))))
+(:goal (and (forall (?x - object) (or (served ?x) (not (DATALOG_PASSENGER ?x)))) (not (incompatible_update))))
 )

@@ -24,8 +24,8 @@ do
       fi
     fi
 
-    # tasks=(catOG elevator robot task order trip tripv2)
-    tasks=(robot)
+    tasks=(catOG elevator robot task order trip tripv2)
+    # tasks=(robot)
     for task in ${tasks[@]};
     do
       if [ $task == "cat" ] || [ $task == "catOG" ]; then

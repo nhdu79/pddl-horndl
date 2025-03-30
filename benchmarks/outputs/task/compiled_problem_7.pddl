@@ -5,5 +5,5 @@
        (designer b)
        (developer c)
        (designer f))
-(:goal (and (AUX80) (compatible_update)))
+(:goal (and (AUX80) (not (incompatible_update))))
 )

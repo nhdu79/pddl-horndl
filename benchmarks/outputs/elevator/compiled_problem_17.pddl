@@ -24,5 +24,5 @@
        (next m p)
        (next p q)
        (liftat b))
-(:goal (and (compatible_update) (forall (?x - object) (AUX34 ?x))))
+(:goal (and (forall (?x - object) (AUX34 ?x)) (not (incompatible_update))))
 )

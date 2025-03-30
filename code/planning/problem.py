@@ -1,5 +1,5 @@
-from planning.logic import And, Fact
-from coherence_update.rules.symbols import COMPATIBLE_UPDATE
+from planning.logic import And, Fact, Not
+from planning.domain import INCOMPATIBLE_UPDATE
 
 class Problem:
     def __init__(self):
@@ -40,7 +40,7 @@ class Problem:
 
     def extend_for_coherence_update(self):
         goal = self.goal
-        not_f = Fact(COMPATIBLE_UPDATE)
+        not_f = Not(Fact(INCOMPATIBLE_UPDATE))
         new_goal = And([goal, not_f])
         self.goal = new_goal
 

@@ -31,5 +31,5 @@
        (contains ae az)
        (contains ac bg)
        (contains af ad))
-(:goal (and (compatible_update) (forall (?x - object) (AUX15 ?x))))
+(:goal (and (forall (?x - object) (AUX15 ?x)) (not (incompatible_update))))
 )
