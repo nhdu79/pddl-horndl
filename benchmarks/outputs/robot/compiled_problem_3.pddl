@@ -5,5 +5,5 @@
        (leftof2 robot)
        (aboveof0 robot)
        (belowof2 robot))
-(:goal (and (DATALOG_QUERY8) (compatible_update)))
+(:goal (and (column2 robot) (compatible_update) (row1 robot)))
 )

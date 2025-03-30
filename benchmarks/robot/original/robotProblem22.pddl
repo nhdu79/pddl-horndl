@@ -7,6 +7,6 @@
 		(AboveOf0 robot)
 		(BelowOf21 robot)
 	)
-	(:goal (mko (and (Column2 robot) (Row1 robot))))
+	(:goal (and (Column2 robot) (Row1 robot)))
 
 )

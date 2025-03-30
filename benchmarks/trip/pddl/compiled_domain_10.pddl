@@ -38,11 +38,11 @@
 (:derived (DATALOG_HOTELSTAY ?x0 - object)
           (or (hotelstay ?x0) (hotelstayrequest ?x0)))
 (:derived (AUX0 ?y0 - object)
-          (and (carrentalrequest ?y0) (flightrequest ?y0)))
+          (and (flightrequest ?y0) (hotelstayrequest ?y0)))
 (:derived (AUX1 ?y0 - object)
           (and (carrentalrequest ?y0) (hotelstayrequest ?y0)))
 (:derived (AUX2 ?y0 - object)
-          (and (flightrequest ?y0) (hotelstayrequest ?y0)))
+          (and (carrentalrequest ?y0) (flightrequest ?y0)))
 (:derived (AUX3)
           (exists (?receipt ?fullTrip - object) (DATALOG_QUERY0 ?fullTrip ?receipt)))
 (:action vtaShuttleService
