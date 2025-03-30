@@ -37,5 +37,5 @@
        (contains ar al)
        (contains bb be)
        (contains bl af))
-(:goal (and (compatible_update) (forall (?x - object) (AUX15 ?x))))
+(:goal (and (forall (?x - object) (AUX16 ?x)) (not (incompatible_update))))
 )

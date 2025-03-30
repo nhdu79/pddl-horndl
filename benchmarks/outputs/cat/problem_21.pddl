@@ -37,5 +37,5 @@
        (contains ar al)
        (contains bb be)
        (contains bl af))
-(:goal (and (compatible_update) (forall (?x - object) (or (disarmed ?x) (not (DATALOG_PACKAGE ?x))))))
+(:goal (and (forall (?x - object) (or (disarmed ?x) (not (DATALOG_PACKAGE ?x)))) (not (incompatible_update))))
 )

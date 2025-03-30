@@ -5,5 +5,5 @@
        (leftof9 robot)
        (aboveof0 robot)
        (belowof9 robot))
-(:goal (and (DATALOG_QUERY36) (not (incompatible_update))))
+(:goal (and (column2 robot) (compatible_update) (row1 robot)))
 )

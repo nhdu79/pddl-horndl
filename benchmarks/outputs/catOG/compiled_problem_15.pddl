@@ -27,5 +27,5 @@
        (contains ag au)
        (contains ay ai)
        (contains al ar))
-(:goal (and (compatible_update) (forall (?x - object) (AUX34 ?x))))
+(:goal (and (compatible_update) (forall (?x - object) (AUX15 ?x))))
 )

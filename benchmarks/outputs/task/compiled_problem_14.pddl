@@ -9,5 +9,5 @@
        (developer j)
        (engineer m)
        (designer n))
-(:goal (and (AUX239) (compatible_update)))
+(:goal (and (AUX80) (compatible_update)))
 )

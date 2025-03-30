@@ -45,5 +45,5 @@
        (contains bm ak)
        (contains an bu)
        (contains ar aq))
-(:goal (and (compatible_update) (forall (?x - object) (or (disarmed ?x) (not (DATALOG_PACKAGE ?x))))))
+(:goal (and (forall (?x - object) (or (disarmed ?x) (not (DATALOG_PACKAGE ?x)))) (not (incompatible_update))))
 )

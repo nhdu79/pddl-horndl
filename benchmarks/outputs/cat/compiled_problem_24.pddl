@@ -43,5 +43,5 @@
        (contains am bq)
        (contains av bg)
        (contains aw aj))
-(:goal (and (compatible_update) (forall (?x - object) (AUX15 ?x))))
+(:goal (and (forall (?x - object) (AUX16 ?x)) (not (incompatible_update))))
 )

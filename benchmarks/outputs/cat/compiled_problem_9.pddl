@@ -15,5 +15,5 @@
        (contains j a)
        (contains r d)
        (contains l g))
-(:goal (and (compatible_update) (forall (?x - object) (AUX15 ?x))))
+(:goal (and (forall (?x - object) (AUX16 ?x)) (not (incompatible_update))))
 )
