@@ -1,7 +1,7 @@
 ## Prerequisite:
 
 The following software is required for a complete run of the pipeline written in `run.sh`:
-- Patched version of Clipper (with `clipper.patch`) 
+- Patched version of Clipper (with `clipper.patch`)
 - Nemo
 - Fastdownward
 
@@ -10,7 +10,7 @@ The following software is required for a complete run of the pipeline written in
 * Clone the repo:
 ```sh
   $ git clone https://github.com/ghxiao/clipper
-``` 
+```
 * Copy the `clipper.patch` in this repo to the Clipper repo (above)
 * Apply the patch:
 ```sh
@@ -26,7 +26,7 @@ The following software is required for a complete run of the pipeline written in
 * (From [Nemo](https://github.com/knowsys/nemo) repo): The fastest way to run Nemo is to use system-specific binaries of our command-line client. Archives with pre-compiled binaries for various platforms are available from the Nemo releases page
   - Download a precompiled binary from releases: https://github.com/knowsys/nemo/releases
   - Extract `tar -xvf [your-chosen-nemo-release].tar`
-* There will be a binary `nmo` file in the extracted folder, whose path we will use in later in `run.sh` 
+* There will be a binary `nmo` file in the extracted folder, whose path we will use in later in `run.sh`
 
 #### Fastdownward:
 * Detailed installation on webpage: https://www.fast-downward.org/latest/documentation/quick-start/
@@ -39,7 +39,7 @@ The following software is required for a complete run of the pipeline written in
   * For Clipper, the path is `/your_full_path_to_clipper/clipper/clipper-distribution/target/clipper/clipper.sh`
   * For nmo, the path is `your_full_path_to_nemo/nmo`
   * For Fastdownward, the path is `your_full_path_to_fastdownward/downward/fast-downward.py`
-* In `run.sh`, change the variables in line 43 (clipper), 44 (nmo), and 46 (fastdownward) to the above corresponding paths 
+* In `run.sh`, change the variables in line 43 (clipper), 44 (nmo), and 46 (fastdownward) to the above corresponding paths
 
 #### Before running the script:
 * `run.sh` uses 4 variables defined in lines 1-4 for automating the experiments
@@ -52,10 +52,10 @@ The following software is required for a complete run of the pipeline written in
 * By default (in `run.sh`), they are in `/benchmarks/outputs/[corresponding-folder-name-of-benchmark]/`
   * If Tseitin transformation is turned on, then the file (domain/problem) names will be `compiled_*.pddl`
   * Otherwise, it will only be `domain_[benchmark-instance].pddl` or `problem_[benchmark-instance].pddl`
- 
+
 ## The Benchmark folder:
 * We keep the original .pddl files (domain + problem) from the work of Borgwardt et al. intact in their corresponding subfolders e.g. `benchmarks/robot`
-* All of the outputs of our pipeline are stationed in `benchmarks/outputs/` 
+* All of the outputs of our pipeline are stationed in `benchmarks/outputs/`
 
 ## Mapping from Benchmark names in Thesis to folder names:
 
@@ -78,4 +78,8 @@ The following software is required for a complete run of the pipeline written in
   * updating as derived predicate
   * compatible_update instead of incompatible_update
 
-* Please keep in mind that while the branch contains the correct implementation for producing the .pddl files, not all files in `benchmarks/outputs/` were transformed correspondingly but only those instances chosen for the experiment as mentioned in the thesis (e.g. Cats 15,16,17). `outputs/cats/domain_[15-17].pddl` 
+* Branch update_v4 (Variant 3)
+  * updating as action instead of derived predicate
+  * incompatible_update
+
+* Please keep in mind that while the branch contains the correct implementation for producing the .pddl files, not all files in `benchmarks/outputs/` were transformed correspondingly but only those instances chosen for the experiment as mentioned in the thesis (e.g. Cats 15,16,17). `outputs/cats/domain_[15-17].pddl`
