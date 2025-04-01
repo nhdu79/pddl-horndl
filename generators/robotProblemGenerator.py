@@ -290,7 +290,7 @@ def generate_planning_problem(rightOf, leftOf, aboveOf, belowOf, column, row, fi
 	output_file.close()
 
 if __name__ == '__main__':
-    for t in range(3,33,1):
+    for t in range(3,23,1):
         columns = t
         rows = t
         generate_planning_domain(columns = columns, rows = rows, filename = "generated/robotDomain"+ str(t) +".pddl",onto = "generated/TTL"+ str(t) +".owl")

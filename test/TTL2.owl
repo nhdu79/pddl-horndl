@@ -22,11 +22,6 @@
                                                           rdfs:subClassOf <http://www.semanticweb.org/alisa/ontologies/2021/3/Column1> .
 
 
-###  http://www.semanticweb.org/alisa/ontologies/2021/3/Column2
- <http://www.semanticweb.org/alisa/ontologies/2021/3/Column2> rdf:type owl:Class ;
-                                                          rdfs:subClassOf <http://www.semanticweb.org/alisa/ontologies/2021/3/Column2> .
-
-
 ###  http://www.semanticweb.org/alisa/ontologies/2021/3/Row0
  <http://www.semanticweb.org/alisa/ontologies/2021/3/Row0> rdf:type owl:Class ;
                                                           rdfs:subClassOf <http://www.semanticweb.org/alisa/ontologies/2021/3/Row0> .
@@ -35,11 +30,6 @@
 ###  http://www.semanticweb.org/alisa/ontologies/2021/3/Row1
  <http://www.semanticweb.org/alisa/ontologies/2021/3/Row1> rdf:type owl:Class ;
                                                           rdfs:subClassOf <http://www.semanticweb.org/alisa/ontologies/2021/3/Row1> .
-
-
-###  http://www.semanticweb.org/alisa/ontologies/2021/3/Row2
- <http://www.semanticweb.org/alisa/ontologies/2021/3/Row2> rdf:type owl:Class ;
-                                                          rdfs:subClassOf <http://www.semanticweb.org/alisa/ontologies/2021/3/Row2> .
 
 
 ###  http://www.semanticweb.org/alisa/ontologies/2021/3/RightOf0 
@@ -53,20 +43,9 @@
                                                           owl:disjointWith <http://www.semanticweb.org/alisa/ontologies/2021/3/LeftOf1> .
 
 
-###  http://www.semanticweb.org/alisa/ontologies/2021/3/RightOf2
- <http://www.semanticweb.org/alisa/ontologies/2021/3/RightOf2> rdf:type owl:Class ;
-                                                          rdfs:subClassOf <http://www.semanticweb.org/alisa/ontologies/2021/3/RightOf1> ;
-                                                          owl:disjointWith <http://www.semanticweb.org/alisa/ontologies/2021/3/LeftOf2> .
-
-
-###  http://www.semanticweb.org/alisa/ontologies/2021/3/LeftOf3 
- <http://www.semanticweb.org/alisa/ontologies/2021/3/LeftOf3> rdf:type owl:Class ;
-                                                          rdfs:subClassOf <http://www.semanticweb.org/alisa/ontologies/2021/3/Columns> .
-
-
-###  http://www.semanticweb.org/alisa/ontologies/2021/3/LeftOf2
+###  http://www.semanticweb.org/alisa/ontologies/2021/3/LeftOf2 
  <http://www.semanticweb.org/alisa/ontologies/2021/3/LeftOf2> rdf:type owl:Class ;
-                                                          rdfs:subClassOf <http://www.semanticweb.org/alisa/ontologies/2021/3/LeftOf3> .
+                                                          rdfs:subClassOf <http://www.semanticweb.org/alisa/ontologies/2021/3/Columns> .
 
 
 ###  http://www.semanticweb.org/alisa/ontologies/2021/3/LeftOf1
@@ -85,20 +64,9 @@
                                                           owl:disjointWith <http://www.semanticweb.org/alisa/ontologies/2021/3/BelowOf1> .
 
 
-###  http://www.semanticweb.org/alisa/ontologies/2021/3/AboveOf2
- <http://www.semanticweb.org/alisa/ontologies/2021/3/AboveOf2> rdf:type owl:Class ;
-                                                          rdfs:subClassOf <http://www.semanticweb.org/alisa/ontologies/2021/3/AboveOf1> ;
-                                                          owl:disjointWith <http://www.semanticweb.org/alisa/ontologies/2021/3/BelowOf2> .
-
-
-###  http://www.semanticweb.org/alisa/ontologies/2021/3/BelowOf3 
- <http://www.semanticweb.org/alisa/ontologies/2021/3/BelowOf3> rdf:type owl:Class ;
-                                                          rdfs:subClassOf <http://www.semanticweb.org/alisa/ontologies/2021/3/Rows> .
-
-
-###  http://www.semanticweb.org/alisa/ontologies/2021/3/BelowOf2
+###  http://www.semanticweb.org/alisa/ontologies/2021/3/BelowOf2 
  <http://www.semanticweb.org/alisa/ontologies/2021/3/BelowOf2> rdf:type owl:Class ;
-                                                          rdfs:subClassOf <http://www.semanticweb.org/alisa/ontologies/2021/3/BelowOf3> .
+                                                          rdfs:subClassOf <http://www.semanticweb.org/alisa/ontologies/2021/3/Rows> .
 
 
 ###  http://www.semanticweb.org/alisa/ontologies/2021/3/BelowOf1

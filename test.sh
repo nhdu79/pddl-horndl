@@ -1,9 +1,10 @@
-i=4
-task="robot"
+i="5"
+task="elevator"
 ## path to a (patched) clipper
 clipper="/home/zinzin2312/repos/clipper/clipper-distribution/target/clipper/clipper.sh"
 nmo="/home/zinzin2312/repos/nemo/target/release/nmo"
 fastdownward="/home/zinzin2312/repos/downward/fast-downward.py"
+update=1
 
 # clipper="/Users/duynhu/repos/clipper/clipper-distribution/target/clipper/clipper.sh"
 # nmo="/Users/duynhu/.appimages/nemo_v0.7.1_aarch64-apple-darwin/nmo"
@@ -19,8 +20,10 @@ input_problem="test/${task}Problem${i}.pddl"
 result_domain="test/test_domain.pddl"
 result_problem="test/test_problem.pddl"
 
-python3 "$compiler" "$owl" "$input_domain" "$input_problem" -d "$result_domain" -p "$result_problem" --clipper "$clipper" --clipper-mqf  --rls "$rls" --nmo "$nmo"
-
-# python3 "$compiler" "$owl" "$input_domain" "$input_problem" -d "$result_domain" -p "$result_problem" --clipper "$clipper" --clipper-mqf
+if [ $update -eq 1 ]; then
+  python3 "$compiler" "$owl" "$input_domain" "$input_problem" -d "$result_domain" -p "$result_problem" --clipper "$clipper" --clipper-mqf  --rls "$rls" --nmo "$nmo"
+else
+  python3 "$compiler" "$owl" "$input_domain" "$input_problem" -d "$result_domain" -p "$result_problem" --clipper "$clipper" --clipper-mqf
+fi
 
 $fastdownward $result_domain $result_problem --search "let(hff,ff(axioms=approximate_negative),lazy_greedy([hff],preferred=[hff]))"
