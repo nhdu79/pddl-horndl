@@ -132,14 +132,10 @@ class Domain:
             Predicate(UPDATING, []),
             Predicate(INCOMPATIBLE_UPDATE, [])
         ]
-        forall_parameters = []
         for predicate in self.predicates:
             # e_addA and e_delA
             p_params = predicate.parameters
             f_params = p_params[0].elements
-            if len(f_params) > len(forall_parameters):
-                forall_parameters = f_params
-
 
             ins_a = INS + parse_name(predicate.name)
             del_a = DEL + parse_name(predicate.name)
@@ -153,8 +149,10 @@ class Domain:
 
             eff_add = ConditionalEffect(f_add_cond, add_eff)
             eff_del = ConditionalEffect(f_del_cond, del_eff)
+            forall_eff_add = ForallEffect(f_params, eff_add)
+            forall_eff_del = ForallEffect(f_params, eff_del)
 
-            elements.extend([eff_add, eff_del])
+            elements.extend([forall_eff_add, forall_eff_del])
             new_preds.append(Predicate(ins_a, p_params))
             new_preds.append(Predicate(del_a, p_params))
 
@@ -165,22 +163,21 @@ class Domain:
 
             f_del_ins_cond = Fact(ins_a_request, f_params)
             f_del_del_cond = Fact(del_a_request, f_params)
-            # f_del_closure = Fact(ins_a_closure, f_params)
 
             del_ins_eff = DelEffect(f_del_ins_cond)
             del_del_eff = DelEffect(f_del_del_cond)
 
             eff_del_ins = ConditionalEffect(f_del_ins_cond, del_ins_eff)
             eff_del_del = ConditionalEffect(f_del_del_cond, del_del_eff)
+            forall_eff_del_ins = ForallEffect(f_params, eff_del_ins)
+            forall_eff_del_del = ForallEffect(f_params, eff_del_del)
 
-            elements.extend([eff_del_ins, eff_del_del])
+            elements.extend([forall_eff_del_ins, forall_eff_del_del])
             new_preds.append(Predicate(ins_a_request, p_params))
             new_preds.append(Predicate(del_a_request, p_params))
             new_preds.append(Predicate(ins_a_closure, p_params))
 
         effects = ConjunctiveEffect(elements)
-        forall = ForallEffect(forall_parameters, effects)
-        # a.effect = effects
-        a.effect = forall
+        a.effect = effects
         self.actions.append(a)
         self.predicates.extend(new_preds)
