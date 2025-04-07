@@ -48,5 +48,5 @@
        (next bf bg)
        (next bg bh)
        (liftat ay))
-(:goal (and (forall (?x - object) (AUX35 ?x)) (not (incompatible_update))))
+(:goal (and (forall (?x - object) (AUX35 ?x)) (not (updating))))
 )

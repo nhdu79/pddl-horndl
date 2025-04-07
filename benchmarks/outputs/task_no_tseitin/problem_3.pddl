@@ -2,5 +2,5 @@
 (:domain taskAssigment)
 (:init
        (developer c))
-(:goal (and (exists (?x ?y - object) (and (DATALOG_QUERY0 ?x ?y) (not (= ?x ?y)))) (not (incompatible_update))))
+(:goal (and (exists (?x ?y - object) (and (DATALOG_QUERY0 ?x ?y) (not (= ?x ?y)))) (not (updating))))
 )

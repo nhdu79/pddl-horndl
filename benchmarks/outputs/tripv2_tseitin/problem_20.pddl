@@ -33,5 +33,5 @@
        (directlyafterobj ba bb)
        (directlyafterobj bb bc)
        (directlyafterobj bc bd))
-(:goal (and (AUX41) (not (incompatible_update))))
+(:goal (and (AUX41) (not (updating))))
 )

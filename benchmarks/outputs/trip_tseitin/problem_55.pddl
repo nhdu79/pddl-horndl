@@ -68,5 +68,5 @@
        (directlyafterobj cj ck)
        (directlyafterobj ck cl)
        (directlyafterobj cl cm))
-(:goal (and (AUX22) (not (incompatible_update))))
+(:goal (and (AUX22) (not (updating))))
 )

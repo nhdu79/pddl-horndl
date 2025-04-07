@@ -33,5 +33,5 @@
        (directlyafterobj ba bb)
        (directlyafterobj bb bc)
        (directlyafterobj bc bd))
-(:goal (and (exists (?receipt ?fullTrip - object) (DATALOG_QUERY0 ?fullTrip ?receipt)) (not (incompatible_update))))
+(:goal (and (exists (?receipt ?fullTrip - object) (DATALOG_QUERY0 ?fullTrip ?receipt)) (not (updating))))
 )

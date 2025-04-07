@@ -31,5 +31,5 @@
        (contains au bf)
        (contains am ar)
        (contains ba ax))
-(:goal (and (forall (?x - object) (AUX16 ?x)) (not (incompatible_update))))
+(:goal (and (forall (?x - object) (AUX16 ?x)) (not (updating))))
 )

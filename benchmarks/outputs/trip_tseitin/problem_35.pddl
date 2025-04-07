@@ -48,5 +48,5 @@
        (directlyafterobj bp bq)
        (directlyafterobj bq br)
        (directlyafterobj br bs))
-(:goal (and (AUX22) (not (incompatible_update))))
+(:goal (and (AUX22) (not (updating))))
 )

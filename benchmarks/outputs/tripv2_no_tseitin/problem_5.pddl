@@ -18,5 +18,5 @@
        (directlyafterobj al am)
        (directlyafterobj am an)
        (directlyafterobj an ao))
-(:goal (and (exists (?receipt ?fullTrip - object) (DATALOG_QUERY0 ?fullTrip ?receipt)) (not (incompatible_update))))
+(:goal (and (exists (?receipt ?fullTrip - object) (DATALOG_QUERY0 ?fullTrip ?receipt)) (not (updating))))
 )

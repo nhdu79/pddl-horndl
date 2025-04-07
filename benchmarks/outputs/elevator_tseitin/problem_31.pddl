@@ -44,5 +44,5 @@
        (next bb bd)
        (next bd be)
        (liftat be))
-(:goal (and (forall (?x - object) (AUX35 ?x)) (not (incompatible_update))))
+(:goal (and (forall (?x - object) (AUX35 ?x)) (not (updating))))
 )

@@ -24,5 +24,5 @@
        (next m p)
        (next p q)
        (liftat b))
-(:goal (and (forall (?x - object) (or (served ?x) (not (DATALOG_PASSENGER ?x)))) (not (incompatible_update))))
+(:goal (and (forall (?x - object) (or (served ?x) (not (DATALOG_PASSENGER ?x)))) (not (updating))))
 )

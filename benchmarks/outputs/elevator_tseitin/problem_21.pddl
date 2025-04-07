@@ -30,5 +30,5 @@
        (next s t)
        (next t u)
        (liftat m))
-(:goal (and (forall (?x - object) (AUX35 ?x)) (not (incompatible_update))))
+(:goal (and (forall (?x - object) (AUX35 ?x)) (not (updating))))
 )

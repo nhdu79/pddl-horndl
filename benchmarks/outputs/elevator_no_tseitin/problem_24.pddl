@@ -34,5 +34,5 @@
        (next u v)
        (next v w)
        (liftat p))
-(:goal (and (forall (?x - object) (or (served ?x) (not (DATALOG_PASSENGER ?x)))) (not (incompatible_update))))
+(:goal (and (forall (?x - object) (or (served ?x) (not (DATALOG_PASSENGER ?x)))) (not (updating))))
 )

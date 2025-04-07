@@ -12,5 +12,5 @@
        (developer o)
        (developer q)
        (engineer s))
-(:goal (and (AUX80) (not (incompatible_update))))
+(:goal (and (AUX80) (not (updating))))
 )

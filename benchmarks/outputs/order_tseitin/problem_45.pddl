@@ -4,5 +4,5 @@
        (requestedservice voipRequest voip)
        (service voip)
        (order voipRequest))
-(:goal (and (AUX70) (not (incompatible_update))))
+(:goal (and (AUX70) (not (updating))))
 )
