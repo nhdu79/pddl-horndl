@@ -1,5 +1,5 @@
 (define (problem robotProblem)
-	(:domain robot)
+    (:domain robot)
 	(:objects robot)
 	(:init
 		(RightOf1 robot)

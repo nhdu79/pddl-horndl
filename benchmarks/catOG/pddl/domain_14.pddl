@@ -23,10 +23,10 @@
           (exists (?y0 - object) (contains ?x0 ?y0)))
 (:action dunk
   :parameters (?x ?y - object)
-  :precondition (and (DATALOG_PACKAGE ?x) (not (DATALOG_INCONSISTENT)))
-  :effect (when (DATALOG_QUERY0 ?x ?y) (and (disarmed ?x))))
+  :precondition (and (DATALOG_QUERY0 ?x ?y) (not (DATALOG_INCONSISTENT)))
+  :effect (and (disarmed ?x)))
 (:action let_the_cats_out
   :parameters (?x ?y - object)
-  :precondition (and (DATALOG_PACKAGE ?x) (not (DATALOG_INCONSISTENT)))
-  :effect (when (contains ?x ?y) (and (not (contains ?x ?y)) (cat ?y))))
+  :precondition (and (contains ?x ?y) (not (DATALOG_INCONSISTENT)))
+  :effect (and (not (contains ?x ?y)) (not (package ?x)) (cat ?y)))
 )

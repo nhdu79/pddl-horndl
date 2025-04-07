@@ -18,7 +18,7 @@
 	(:action moveRight
 		:parameters (?x)
 		:precondition (and (mko (Columns ?x)))
-		:effect (and 
+		:effect (and
 			(when (mko (RightOf0 ?x))
 				(and (RightOf1 ?x))
 				)
@@ -37,7 +37,7 @@
 	(:action moveLeft
 		:parameters (?x)
 		:precondition (and (mko (Columns ?x)))
-		:effect (and 
+		:effect (and
 			(when (mko (LeftOf2 ?x))
 				(and (LeftOf1 ?x))
 				)
@@ -56,7 +56,7 @@
 	(:action moveUp
 		:parameters (?x)
 		:precondition (and (mko (Rows ?x)))
-		:effect (and 
+		:effect (and
 			(when (mko (AboveOf0 ?x))
 				(and (AboveOf1 ?x))
 				)
@@ -75,7 +75,7 @@
 	(:action moveDown
 		:parameters (?x)
 		:precondition (and (mko (Rows ?x)))
-		:effect (and 
+		:effect (and
 			(when (mko (BelowOf2 ?x))
 				(and (BelowOf1 ?x))
 				)
