@@ -1,7 +1,7 @@
 keep_pddl=1
 updates=(1)
 tseitins=(1)
-mode="ff"
+mode="ff_negative"
 # supported: cea/cea_negative/ff/ff_negative
 
 for do_update in ${updates[@]};
@@ -27,7 +27,7 @@ do
     tasks=(catOG elevator robot task order trip tripv2)
     for task in ${tasks[@]};
     do
-      if [ $task == "cat" ] || [ $task == "catOG" ]; then
+      if [ $task == "catOG" ]; then
         elements=(6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25)
       elif [ $task == "elevator" ]; then
         elements=(15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34)
@@ -67,10 +67,10 @@ do
         input_problem="$prefix/original/${task}Problem${i}.pddl"
         # With update semantics
         if [ $do_update -eq 1 ]; then
-          result_domain="benchmarks/outputs/$task/domain_${i}.pddl"
-          result_problem="benchmarks/outputs/$task/problem_${i}.pddl"
-          tseitin_domain="benchmarks/outputs/$task/compiled_domain_${i}.pddl"
-          tseitin_problem="benchmarks/outputs/$task/compiled_problem_${i}.pddl"
+          result_domain="benchmarks/outputs/${task}_no_tseitin/domain_${i}.pddl"
+          result_problem="benchmarks/outputs/${task}_no_tseitin/problem_${i}.pddl"
+          tseitin_domain="benchmarks/outputs/${task}_tseitin/domain_${i}.pddl"
+          tseitin_problem="benchmarks/outputs/${task}_tseitin/problem_${i}.pddl"
 
         # echo "Compiling dom & prob $i with update"
         python3 "$compiler" "$owl" "$input_domain" "$input_problem" -d "$result_domain" -p "$result_problem" --clipper "$clipper" --clipper-mqf  --rls "$rls" --nmo "$nmo" --output-csv "$csv" --benchmark-name "$task $i"$@
@@ -118,7 +118,7 @@ do
         # python3 helpers.py --output "$planner_output" --csv "$csv"
         #
         # echo "" >> $csv
-        #
+
         # if [ $keep_pddl -eq 0 ]; then
         #   rm -rf $result_domain
         #   rm -rf $result_problem
