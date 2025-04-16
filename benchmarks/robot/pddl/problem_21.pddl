@@ -5,5 +5,5 @@
        (leftof20 robot)
        (aboveof0 robot)
        (belowof20 robot))
-(:goal (and (DATALOG_QUERY80) (not (DATALOG_INCONSISTENT))))
+(:goal (and (column2 robot) (row1 robot) (not (DATALOG_INCONSISTENT))))
 )
