@@ -6,5 +6,5 @@
        (developer e)
        (designer f)
        (engineer g))
-(:goal (and (AUX80) (compatible_update)))
+(:goal (and (AUX80) (not (updating))))
 )

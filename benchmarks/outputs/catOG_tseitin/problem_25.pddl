@@ -45,5 +45,5 @@
        (contains bm ak)
        (contains an bu)
        (contains ar aq))
-(:goal (and (compatible_update) (forall (?x - object) (AUX15 ?x))))
+(:goal (and (forall (?x - object) (AUX15 ?x)) (not (updating))))
 )

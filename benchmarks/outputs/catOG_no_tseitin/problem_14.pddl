@@ -25,5 +25,5 @@
        (contains ay as)
        (contains bb ad)
        (contains ab af))
-(:goal (and (compatible_update) (forall (?x - object) (or (disarmed ?x) (not (DATALOG_PACKAGE ?x))))))
+(:goal (and (forall (?x - object) (or (disarmed ?x) (not (DATALOG_PACKAGE ?x)))) (not (updating))))
 )

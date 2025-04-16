@@ -39,5 +39,5 @@
        (contains ad ak)
        (contains ai ao)
        (contains bn bd))
-(:goal (and (compatible_update) (forall (?x - object) (or (disarmed ?x) (not (DATALOG_PACKAGE ?x))))))
+(:goal (and (forall (?x - object) (or (disarmed ?x) (not (DATALOG_PACKAGE ?x)))) (not (updating))))
 )

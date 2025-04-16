@@ -11,5 +11,5 @@
        (developer m)
        (developer n)
        (engineer p))
-(:goal (and (AUX80) (compatible_update)))
+(:goal (and (AUX80) (not (updating))))
 )

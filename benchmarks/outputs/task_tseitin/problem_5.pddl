@@ -3,5 +3,5 @@
 (:init
        (developer c)
        (designer d))
-(:goal (and (AUX80) (compatible_update)))
+(:goal (and (AUX80) (not (updating))))
 )

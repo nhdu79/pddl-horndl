@@ -47,5 +47,5 @@
        (next bd be)
        (next be bf)
        (liftat ax))
-(:goal (and (compatible_update) (forall (?x - object) (or (served ?x) (not (DATALOG_PASSENGER ?x))))))
+(:goal (and (forall (?x - object) (or (served ?x) (not (DATALOG_PASSENGER ?x)))) (not (updating))))
 )
