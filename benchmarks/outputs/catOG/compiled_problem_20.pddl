@@ -37,5 +37,5 @@
        (contains bm bg)
        (contains aa bj)
        (contains af at))
-(:goal (and (compatible_update) (forall (?x - object) (AUX15 ?x))))
+(:goal (and (forall (?x - object) (AUX15 ?x)) (not (updating))))
 )

@@ -45,5 +45,5 @@
        (next az bc)
        (next bc bd)
        (liftat bc))
-(:goal (and (compatible_update) (forall (?x - object) (AUX34 ?x))))
+(:goal (and (forall (?x - object) (AUX34 ?x)) (not (updating))))
 )
