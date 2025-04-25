@@ -2,6 +2,8 @@ import os
 import re
 import time
 import subprocess
+from datalog import Negated, Equality
+from planning.logic import Forall, Or, And, Comparison, Fact, SimpleFExpression, DerivedPredicate, Predicate
 from utils.functions import read_predicates, read_unary_predicate
 from coherence_update.classes.tbox import TBox
 from coherence_update.classes.inclusion import INCLUSION_TYPES_ORDER
@@ -9,6 +11,7 @@ from coherence_update.update import CohrenceUpdate
 from utils.functions import get_repr
 from coherence_update.rules.atomic import build_del_concept_and_incompatible_rules_for_atomic_concepts, build_del_role_and_incompatible_rules_for_roles
 from coherence_update.rules.negative import atomicA_closure, roleP_closure
+from coherence_update.rules.symbols import COMPATIBLE_UPDATE, INCOMPATIBLE_UPDATE
 
 TMP_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'tmp')
 RULES_FILE_NAME = '_update_rules.txt'
@@ -94,6 +97,57 @@ class UpdateRunner:
     def atomic_predicates(self):
         atomic = self.a_atomics + self.roles + self.functs + self.invFunct
         return set([get_repr(uri) for uri in atomic])
+
+
+def transform_incompatible_update(rules):
+    """
+        rules: list of Datalog rules
+        return: list of filtered Datalog rules, compatible_update
+    """
+    new_rules = []
+    cond = []
+    params = set()
+    for rule in rules:
+        if rule.head.name == INCOMPATIBLE_UPDATE:
+            disjuctions = []
+            for literal in rule.tail:
+                if isinstance(literal, Negated):
+                    if isinstance(literal.element, Equality):
+                        left_exp = SimpleFExpression(ensure_pddl_parameter(literal.element.left))
+                        right_exp = SimpleFExpression(ensure_pddl_parameter(literal.element.right))
+                        f = Comparison("=", left_exp, right_exp)
+                        neg = f.negate()
+                        params.update([f.left.__str__(), f.right.__str__()])
+                    else:
+                        raise ValueError("Unknown literal type: %r" % literal)
+                elif isinstance(literal, Equality):
+                    left_exp = SimpleFExpression(ensure_pddl_parameter(literal.left))
+                    right_exp = SimpleFExpression(ensure_pddl_parameter(literal.right))
+                    f = Comparison("=", left_exp, right_exp)
+                    neg = f.negate()
+                    params.update([f.left.__str__(), f.right.__str__()])
+                else:
+                    f = Fact(literal.name, [ensure_pddl_parameter(x) for x in [*literal.parameters]])
+                    neg = f.negate()
+                    params.update(f.parameters)
+                disjuctions.append(neg)
+            cond.append(Or(disjuctions))
+        else:
+            new_rules.append(rule)
+
+    cond = And(cond)
+    cond = Forall(params, cond)
+    predicate = Predicate(COMPATIBLE_UPDATE, [])
+    compatible_update = DerivedPredicate(predicate, cond)
+
+    return new_rules, compatible_update
+
+
+def ensure_pddl_parameter(parameter):
+    if not parameter.startswith("?"):
+        return "?" + parameter
+    return parameter
+
 
 if __name__ == '__main__':
     runner = UpdateRunner()

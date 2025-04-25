@@ -2,7 +2,7 @@ from coherence_update.rules.symbols import (
     ACTION_UPDATE_NAME,
     CLOSURE,
     DEL,
-    INCOMPATIBLE_UPDATE,
+    COMPATIBLE_UPDATE,
     INS,
     REQUEST,
     UPDATING,
@@ -125,12 +125,12 @@ class Domain:
         a = Action(ACTION_UPDATE_NAME)
         a.parameters = []
         updating = Fact(UPDATING)
-        compatible_update = Not(Fact(INCOMPATIBLE_UPDATE))
+        compatible_update = Fact(COMPATIBLE_UPDATE)
         a.precondition = And([updating, compatible_update])
         elements = []
         new_preds = [
             Predicate(UPDATING, []),
-            Predicate(INCOMPATIBLE_UPDATE, [])
+            Predicate(COMPATIBLE_UPDATE, [])
         ]
         for predicate in self.predicates:
             # e_addA and e_delA
@@ -179,5 +179,6 @@ class Domain:
 
         effects = ConjunctiveEffect(elements)
         a.effect = effects
+
         self.actions.append(a)
         self.predicates.extend(new_preds)
