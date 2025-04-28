@@ -122,7 +122,11 @@ class Domain:
             eff = action.effect
             wrapped = wrapper(eff)
             add_eff = AddEffect(updating)
-            new_eff = ConjunctiveEffect([add_eff, wrapped])
+            if isinstance(wrapped, ConjunctiveEffect):
+                new_elements = [*wrapped.elements, add_eff]
+                new_eff = ConjunctiveEffect(new_elements)
+            else:
+                new_eff = ConjunctiveEffect([add_eff, wrapped])
             action.effect = new_eff
 
         # Construct update action
