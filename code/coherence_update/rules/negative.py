@@ -1,7 +1,6 @@
 # Negation inclusion rules (Sec 2.4)
 from coherence_update.rules.symbols import NOT, RULE_SEPARATOR, INS, DEL, REQUEST, CLOSURE, INCOMPATIBLE_UPDATE
 
-
 def atomicB_in_not_atomicA(b_repr, a_repr):
     """
         Caution: a_repr is representation of `A`, not `not A`
