@@ -40,7 +40,6 @@ class Problem:
 
     def extend_for_coherence_update(self):
         goal = self.goal
-        not_f = Not(Fact(UPDATING))
-        new_goal = And([goal, not_f])
+        not_updating = Not(Fact(UPDATING))
+        new_goal = And([goal, not_updating])
         self.goal = new_goal
-

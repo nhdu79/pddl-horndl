@@ -1,4 +1,4 @@
-i="3"
+i=""
 task="robot"
 semantics="coherence"
 ## path to a (patched) clipper
@@ -27,4 +27,4 @@ else
   python3 "$compiler" "$owl" "$input_domain" "$input_problem" -d "$result_domain" -p "$result_problem" --clipper "$clipper" --clipper-mqf
 fi
 
-$fastdownward $result_domain $result_problem --search "let(hff,ff(axioms=approximate_negative),lazy_greedy([hff],preferred=[hff]))"
+# $fastdownward $result_domain $result_problem --search "let(hff,ff(axioms=approximate_negative),lazy_greedy([hff],preferred=[hff]))"

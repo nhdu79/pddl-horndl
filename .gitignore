@@ -9,3 +9,5 @@ results.csv
 sas_plan
 csvs/*
 logs/
+# ignore venv
+.venv/

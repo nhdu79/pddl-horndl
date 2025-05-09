@@ -2,50 +2,60 @@ from collections import defaultdict
 from coherence_update.rules.atomic import *
 from coherence_update.rules.negative import *
 from coherence_update.rules.positive import *
+from compilation.variant_options import UPDATING_PREDICATE_TYPES
 
 class CohrenceUpdate:
-    def run(tbox):
-        update = CohrenceUpdate(tbox)
+    def run(tbox, updating_pred_type):
+        update = CohrenceUpdate(tbox, updating_pred_type)
         rules = []
-        rules.extend(update.build_atomic_del_and_funct_rules())
+        rules.extend(update.build_rules_for_atomic_concepts_and_roles())
         rules.extend(update.build_update_rules("positive"))
         rules.extend(update.build_update_rules("negative"))
-        rules.extend(update.build_positive_closure_update_rules())
-        rules.extend(update.build_negative_closure_update_rules())
+        rules.extend(update.build_positive_inclusions_update_rules())
+        rules.extend(update.build_negative_inclusions_update_rules())
         return rules
 
-    def __init__(self, tbox):
+    def __init__(self, tbox, updating_pred_type):
+        """
+            A in A_i => type 1
+            P in P_i => type 2
+            P in P_i^- => type 3
+            A in not A_i => type 4
+            A in not dom(P_i) => type 5
+            A in not rng(P_i) => type 6
+            P in not P_i => type 7
+            !!! P in not rng(S_i) => type 8 !!!
+            dom(P) in not dom(T_i) => type 9
+            dom(P) in not rng(Q_i) => type 10
+            rng(P) in not dom(W_i) => type 11
+            rng(P) in not rng(U_i) => type 12
+            dom(P) in not A_i => type 13
+            rng(P) in not B_i => type 14
+        """
         self.tbox = tbox
+        self.updating_pred_type = updating_pred_type
         self._type1, self._type2, self._type3 = [defaultdict(list) for _ in range(3)]
         self._type4, self._type5, self._type6 = [defaultdict(list) for _ in range(3)]
         self._type7, self._type8, self._type9 = [defaultdict(list) for _ in range(3)]
         self._type10, self._type11, self._type12 = [defaultdict(list) for _ in range(3)]
         self._type13, self._type14 = [defaultdict(list) for _ in range(2)]
-        # A in A_i => type 1
-        # P in P_i => type 2
-        # P in P_i^- => type 3
-        # A in not A_i => type 4
-        # A in not dom(P_i) => type 5
-        # A in not rng(P_i) => type 6
-        # P in not P_i => type 7
-        # !!! P in not rng(S_i) => type 8 !!!
-        # dom(P) in not dom(T_i) => type 9
-        # dom(P) in not rng(Q_i) => type 10
-        # rng(P) in not dom(W_i) => type 11
-        # rng(P) in not rng(U_i) => type 12
-        # dom(P) in not A_i => type 13
-        # rng(P) in not B_i => type 14
 
-    def build_atomic_del_and_funct_rules(self):
+    def build_rules_for_atomic_concepts_and_roles(self):
         atomic_concepts = self.tbox.repr_of("a_concepts")
         atomic_roles = self.tbox.repr_of("roles")
         functs, inv_functs = self.tbox.repr_of("functs"), self.tbox.repr_of("inv_functs")
 
-        r_concepts = build_del_concept_and_incompatible_rules_for_atomic_concepts(atomic_concepts)
-        r_roles = build_del_role_and_incompatible_rules_for_roles(atomic_roles)
-        r_functs = build_funct_P_and_funct_inv_P_rules(functs, inv_functs)
+        r_concepts = build_insert_and_delete_rules_and_incompatible_update_for_atomic_concepts(atomic_concepts)
+        r_roles = build_insert_and_delete_rules_and_incompatible_update_for_atomic_roles(atomic_roles)
+        r_functs = build_delete_rules_and_incompatible_update_for_functs(functs)
+        r_inv_functs = build_delete_rules_and_incompatible_update_for_inv_functs(inv_functs)
+        if self.updating_pred_type == UPDATING_PREDICATE_TYPES["derived_predicate"]:
+            r_concepts.extend(build_updating_rules_for_atomic_concepts(atomic_concepts))
+            r_roles.extend(build_updating_rules_for_atomic_roles(atomic_roles))
+            r_functs.extend(build_updating_rules_for_functs(functs))
+            r_inv_functs.extend(build_updating_rules_for_inv_functs(inv_functs))
 
-        return r_concepts + r_roles + r_functs
+        return r_concepts + r_roles + r_functs + r_inv_functs
 
     def build_update_rules(self, closure_type):
         rules = []
@@ -92,7 +102,7 @@ class CohrenceUpdate:
 
         return rules
 
-    def build_positive_closure_update_rules(self):
+    def build_positive_inclusions_update_rules(self):
         rules = []
         for key, builder_method in POS_INCL_CLOSURE_METHOD_MAP.items():
             inclusions = self.tbox.incl_dict[key]
@@ -110,7 +120,7 @@ class CohrenceUpdate:
 
         return rules
 
-    def build_negative_closure_update_rules(self):
+    def build_negative_inclusions_update_rules(self):
         rules = []
         atomic_concepts = self.tbox.repr_of("a_concepts")
         for a_concept in atomic_concepts:
@@ -122,7 +132,6 @@ class CohrenceUpdate:
             r_reprs, s_reprs, t_reprs = self._type7[a_role], self._type8[a_role], self._type9[a_role]
             q_reprs, w_reprs, u_reprs = self._type10[a_role], self._type11[a_role], self._type12[a_role]
             a_reprs, b_reprs = self._type13[a_role], self._type14[a_role]
-
             rules.extend(roleP_closure(a_role, r_reprs, s_reprs, t_reprs, q_reprs, w_reprs, u_reprs, a_reprs, b_reprs))
 
         return rules

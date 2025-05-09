@@ -20,8 +20,3 @@ for i in range(3, 23):
         rls = re.sub(ontology_file_path, "::DATA_IMPORT_PATH", rls)
     with open(rls_file_path, 'w') as f:
         f.write(rls)
-
-
-
-
-
