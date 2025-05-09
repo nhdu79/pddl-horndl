@@ -8,8 +8,6 @@
 	(Table ?x)
 	(Blocked ?x)
   (Holding ?x)
-  (Clear ?x)
-  (HandEmpty)
 )
 
 (:action pick-up

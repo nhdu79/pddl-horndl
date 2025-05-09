@@ -1,0 +1,7 @@
+(define (problem BLOCKS-7-0)
+(:domain BLOCKS)
+(:objects T C F A B G D E )
+(:INIT (ONTABLE D T) (ONBLOCK E G) (ONBLOCK G B) (ONBLOCK B A) (ONBLOCK A F) (ONBLOCK F C)
+ (ONBLOCK C D))
+(:goal (AND (MKO (ON A G)) (MKO (ON G D)) (MKO (ON D B)) (MKO (ON B C)) (MKO (ON C F)) (MKO (ON F E))))
+)
