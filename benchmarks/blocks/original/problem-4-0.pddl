@@ -2,5 +2,5 @@
 (:domain Blocks)
 (:objects D B A C T )
 (:init (onTable C T) (onTable A T) (onTable B T) (onTable D T))
-(:goal (and (on D C) (on C B) (on B A)))
+(:goal (and (mko (on D C)) (mko (on C B)) (mko (on B A))))
 )

@@ -30,8 +30,8 @@ invFunct(?P) :- TRIPLE(?P, rdf:type, owl:InverseFunctionalProperty) .
 
 
 %% 1.1.) property with dom and rng
-auxDomOf(?X, ?P) :- TRIPLE(?P, rdfs:domain, ?X) .
-auxRngOf(?Y, ?P) :- TRIPLE(?P, rdfs:range, ?Y) .
+sub(?D, ?X) :- TRIPLE(?P, rdfs:domain, ?X), domOf(?D, ?P) .
+sub(?R, ?X) :- TRIPLE(?P, rdfs:range, ?X), rngOf(?R, ?P) .
 
 
 %% 1.2.) ?X := \existsP

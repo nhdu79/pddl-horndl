@@ -12,30 +12,25 @@
   (HandEmpty)
 )
 
-(:derived (Clear ?x)
-  (not (mko (Blocked ?x)))
-)
-
-(:derived (HandEmpty)
-  (not (mko (exists (?x) (Holding ?x))))
-)
-
 (:action pick-up
   :parameters (?x ?y)
   :precondition (and (mko (on ?x ?y))
-                     (Clear ?x)
-                     (HandEmpty)
+                     (not (mko (Blocked ?x)))
+                     (not (mko (exists (?x) (Holding ?x))))
   )
   :effect (and (not (on ?x ?y))
                (Holding ?x)
+               (not (Blocked ?y))
   )
 )
 
 (:action put-down
   :parameters (?x ?y)
   :precondition (and (Holding ?x)
-                     (Clear ?y))
+                     (not (mko (Blocked ?y)))
+  )
   :effect (and (not (Holding ?x))
+               (not (Blocked ?x))
                (when (mko (Table ?y))
                      (onTable ?x ?y))
                (when (mko (Block ?y))
