@@ -51,7 +51,7 @@ def transform_incompatible_update(rules):
                         left_exp = SimpleFExpression(ensure_pddl_parameter(literal.element.left))
                         right_exp = SimpleFExpression(ensure_pddl_parameter(literal.element.right))
                         f = Comparison("=", left_exp, right_exp)
-                        neg = f.negate()
+                        neg = f
                         params.update([f.left.__str__(), f.right.__str__()])
                     else:
                         raise ValueError("Unknown literal type: %r" % literal)
