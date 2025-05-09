@@ -11,7 +11,12 @@
 		(Row0 ?x)
 		(AboveOf0 ?x)
 		(BelowOf1 ?x)
+    (Clear ?x)
+    (Blocked ?x)
 	)
+  (:derived (Clear ?x)
+     (not (mko (Blocked ?x)))
+  )
 	(:action moveRight
 		:parameters (?x)
 		:precondition (and (mko (Columns ?x)))

@@ -53,7 +53,7 @@ do
 
       # path to compiler.py
       compiler="code/compiler.py"
-      tseitin="code/new_tseitin.py"
+      tseitin="code/rewriting/new_tseitin.py"
       rls="code/nemo/t_closure.rls"
 
       for i in ${elements[@]};

@@ -6,6 +6,7 @@ from coherence_update.rules.symbols import (
     INS,
     REQUEST,
     UPDATING,
+    COMPATIBLE_UPDATE,
 )
 from planning.logic import (
     Action,
@@ -20,6 +21,30 @@ from planning.logic import (
     Predicate,
 )
 from utils.functions import parse_name
+from compilation.variant_options import (
+    UPDATING_PREDICATE_TYPES,
+    INCOMPATIBLE_UPDATE_PREDICATE_TYPES,
+)
+
+
+def wrapper(eff):
+    new_eff = None
+    if isinstance(eff, AddEffect):
+        params = eff.fact.parameters
+        predicate = INS + parse_name(eff.fact.predicate) + REQUEST
+        new_eff = AddEffect(Fact(predicate, params))
+    elif isinstance(eff, DelEffect):
+        params = eff.fact.parameters
+        predicate = DEL + parse_name(eff.fact.predicate) + REQUEST
+        new_eff = AddEffect(Fact(predicate, params))
+    elif isinstance(eff, ConditionalEffect):
+        new_eff = ConditionalEffect(eff.condition, wrapper(eff.effect))
+    elif isinstance(eff, ConjunctiveEffect):
+        new_eff = ConjunctiveEffect([wrapper(e) for e in eff.elements])
+    else:
+        raise ValueError("Unknown effect type: %r" % eff)
+    return new_eff
+
 
 class Domain:
     def __init__(self):
@@ -82,7 +107,7 @@ class Domain:
         return closure
 
     def get_type_to_constant_map(self, type_relation):
-        constants = { t: list() for t in type_relation.keys() }
+        constants = {t: list() for t in type_relation.keys()}
         constants["object"] = list()
         if self.constants != None:
             for tl in self.constants:
@@ -90,48 +115,66 @@ class Domain:
                     constants[super_type].extend(tl.elements)
         return constants
 
-    def extend_for_coherence_update(self):
-        def wrapper(eff):
-            new_eff = None
-            if isinstance(eff, AddEffect):
-                params = eff.fact.parameters
-                predicate = INS + parse_name(eff.fact.predicate) + REQUEST
-                new_eff = AddEffect(Fact(predicate, params))
-            elif isinstance(eff, DelEffect):
-                params = eff.fact.parameters
-                predicate = DEL + parse_name(eff.fact.predicate) + REQUEST
-                new_eff = AddEffect(Fact(predicate, params))
-            elif isinstance(eff, ConditionalEffect):
-                new_eff = ConditionalEffect(eff.condition, wrapper(eff.effect))
-            elif isinstance(eff, ConjunctiveEffect):
-                new_eff = ConjunctiveEffect([wrapper(e) for e in eff.elements])
-            else:
-                raise ValueError("Unknown effect type: %r" % eff)
-
-            return new_eff
-
-        # Adjust actions
+    def adjust_actions(self, up):
+        """
+            Called in Compiler
+        """
         for action in self.actions:
-            # Change precondition
             pre = action.precondition
-            not_updating = Not(Fact(UPDATING))
+            updating = Fact(UPDATING)
+            not_updating = Not(updating)
             new_pre = And([pre, not_updating])
             action.precondition = new_pre
-            # Change effect
             eff = action.effect
-            action.effect = wrapper(eff)
+            if up == UPDATING_PREDICATE_TYPES["derived_predicate"]:
+                action.effect = wrapper(eff)
+            elif up == UPDATING_PREDICATE_TYPES["action_effect"]:
+                wrapped = wrapper(eff)
+                add_eff = AddEffect(updating)
+                if isinstance(wrapped, ConjunctiveEffect):
+                    new_elements = [*wrapped.elements, add_eff]
+                    new_eff = ConjunctiveEffect(new_elements)
+                else:
+                    new_eff = ConjunctiveEffect([add_eff, wrapped])
+                action.effect = new_eff
 
-        # Construct update action
-        a = Action(ACTION_UPDATE_NAME)
-        a.parameters = []
-        updating = Fact(UPDATING)
-        compatible_update = Not(Fact(INCOMPATIBLE_UPDATE))
-        a.precondition = And([updating, compatible_update])
+    def construct_update_action(self, up, iupt):
+        """
+            Called in compiler
+        """
+        action = self._pre_construct_update_action(iupt)
+        new_preds = [Predicate(UPDATING, [])]
+
+        if iupt == INCOMPATIBLE_UPDATE_PREDICATE_TYPES["incompatible_update"]:
+            new_preds.append(Predicate(INCOMPATIBLE_UPDATE, []))
+        elif iupt == INCOMPATIBLE_UPDATE_PREDICATE_TYPES["compatible_update"]:
+            new_preds.append(Predicate(COMPATIBLE_UPDATE, []))
+
+        elements = self._construct_effects_for_update_action(new_preds)
+
+        if up == UPDATING_PREDICATE_TYPES["action_effect"]:
+            elements.append(DelEffect(Fact(UPDATING)))
+
+        effects = ConjunctiveEffect(elements)
+        action.effect = effects
+        self.actions.append(action)
+        self.predicates.extend(new_preds)
+
+    def _pre_construct_update_action(self, iupt):
+        action = Action(ACTION_UPDATE_NAME)
+        action.parameters = []
+
+        if iupt == INCOMPATIBLE_UPDATE_PREDICATE_TYPES["incompatible_update"]:
+            compatible_update = Not(Fact(INCOMPATIBLE_UPDATE))
+        elif iupt == INCOMPATIBLE_UPDATE_PREDICATE_TYPES["compatible_update"]:
+            compatible_update = Fact(COMPATIBLE_UPDATE)
+
+        action.precondition = And([Fact(UPDATING), compatible_update])
+
+        return action
+
+    def _construct_effects_for_update_action(self, new_preds):
         elements = []
-        new_preds = [
-            Predicate(UPDATING, []),
-            Predicate(INCOMPATIBLE_UPDATE, [])
-        ]
         for predicate in self.predicates:
             # e_addA and e_delA
             p_params = predicate.parameters
@@ -177,7 +220,4 @@ class Domain:
             new_preds.append(Predicate(del_a_request, p_params))
             new_preds.append(Predicate(ins_a_closure, p_params))
 
-        effects = ConjunctiveEffect(elements)
-        a.effect = effects
-        self.actions.append(a)
-        self.predicates.extend(new_preds)
+        return elements

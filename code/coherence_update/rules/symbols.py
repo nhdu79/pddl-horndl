@@ -2,6 +2,7 @@ NOT = "-"
 RULE_SEPARATOR = " :- "
 WORD_SEPARATOR = "_"
 
+COMPATIBLE_UPDATE = "compatible" + WORD_SEPARATOR + "update"
 INCOMPATIBLE_UPDATE = "incompatible" + WORD_SEPARATOR + "update"
 ACTION_UPDATE_NAME = "update"
 UPDATING = "updating"

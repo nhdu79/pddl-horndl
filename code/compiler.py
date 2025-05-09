@@ -4,92 +4,43 @@ import argparse
 import shutil
 import sys
 
-from clipper import Clipper
-from coherence_update.rules.symbols import DEL, INCOMPATIBLE_UPDATE, INS, UPDATING
-import datalog
-import pddl
-from update_runner import Timer, UpdateRunner
+import planning.datalog as datalog
+import planning.pddl as pddl
+from compilation.ucq_collector import UCQCollector
+from compilation.utils import (
+    INCONSISTENCY_PREDICATE_NAME,
+    QUERY_PREDICATE_NAME,
+    encodes_inconsistency,
+    get_parameter_list,
+    get_query_id,
+    is_coherence_update_predicate_name,
+    is_primed_predicate_name,
+    is_update_predicate_name,
+    prime_predicate_name,
+    query_predicate_name,
+    unprime_predicate_name,
+)
+from compilation.variant_options import (
+    INCOMPATIBLE_UPDATE_PREDICATE_TYPES,
+    UPDATING_PREDICATE_TYPES,
+)
+from rewriting.clipper import Clipper
+from update_runner import Timer, UpdateRunner, transform_incompatible_update
 from utils.functions import parse_name
 
-QUERY_PREDICATE_NAME = "QUERY"
-INCONSISTENCY_PREDICATE_NAME = "inconsistent"
 
-def is_primed_predicate_name(name):
-    return name.startswith("DATALOG_")
-
-def is_update_predicate_name(name):
-    return name == UPDATING or name == INCOMPATIBLE_UPDATE
-
-def is_coherence_update_predicate_name(name):
-    return name.startswith(INS) or name.startswith(DEL) or is_update_predicate_name(name)
-
-def prime_predicate_name(original):
-    return "DATALOG_%s" % original.upper()
-
-def unprime_predicate_name(primed_name):
-    if primed_name.startswith("DATALOG_"):
-        return primed_name[8:].lower()
-    return primed_name
-
-def query_predicate_name(idx):
-    return QUERY_PREDICATE_NAME + str(idx)
-
-def get_query_id(name):
-    if name.lower().startswith(QUERY_PREDICATE_NAME.lower()):
-        return int(name[len(QUERY_PREDICATE_NAME):])
-    return None
-
-def get_parameter_list(length, var_name="?x%d"):
-    if length == 0:
-        return []
-    else:
-        return [pddl.TypedList([var_name % j for j in range(length)])]
-
-def pddl_predicate(name, num_parameters, primed=False):
-    return pddl.Predicate(
-            prime_predicate_name(name) if primed else name,
-            get_parameter_list(num_parameters))
-
-def encodes_inconsistency(head):
-    return isinstance(head, datalog.Falsity) or head.name == 'nothing'
-
-
-class UCQCollector:
-    def __init__(self, clipper):
-        self.ucqs = []
-        self.equality = False
-        self.queried_predicates = set()
-        self.clipper = clipper
-
-    def __call__(self, mko):
-        s = pddl.Substitution()
-        ucq = mko.ucq.simplified_ucq(s)
-        if isinstance(ucq, pddl.Comparison):
-            assert False
-        elif isinstance(ucq, pddl.Fact):
-            p = self.clipper.adapt_predicate_name(ucq.predicate)
-            self.queried_predicates.add(p)
-            return pddl.Fact(
-                    prime_predicate_name(p),
-                    ucq.parameters)
-        else:
-            self.ucqs.append(ucq)
-            return pddl.Fact(
-                    prime_predicate_name(query_predicate_name(len(self.ucqs)-1)),
-                    list(sorted(ucq.free_vars())))
-
-
-class Compilation:
-    def __init__(self,
-                 domain,
-                 problem,
-                 clipper,
-                 filter_duplicates = True,
-                 filter_unimportant_atoms = True,
-                 expensive_duplicate_filtering = False,
-                 update_runner = None,
-                 timer_output = None
-                 ):
+class Compiler:
+    def __init__(
+        self,
+        domain,
+        problem,
+        clipper,
+        filter_duplicates=True,
+        filter_unimportant_atoms=True,
+        expensive_duplicate_filtering=False,
+        update_runner=None,
+        timer_output=None,
+    ):
         self.domain = domain
         self.problem = problem
         self.clipper = clipper
@@ -104,8 +55,15 @@ class Compilation:
         with Timer("compilation", block=True, file=self.timer_output):
             if self.update_runner:
                 with Timer("domain_extension", file=self.timer_output):
-                    self.domain.extend_for_coherence_update()
+                    self.domain.adjust_actions(
+                        self.update_runner.updating_pred_type,
+                    )
+                    self.domain.construct_update_action(
+                        self.update_runner.updating_pred_type,
+                        self.update_runner.incompatible_update_pred_type,
+                    )
                     self.problem.extend_for_coherence_update()
+
             with Timer("collecting_queries", file=self.timer_output):
                 self._collect_and_replace_ucqs()
             with Timer("rewriting", file=self.timer_output):
@@ -124,20 +82,18 @@ class Compilation:
                 self._compile_datalog_rules()
             with Timer("finalizing", file=self.timer_output):
                 self._unprime_conditions_and_enforce_consistency()
-        print("")
 
     def _apply_to_all_conditions(self, typ, fn):
         def ce_wrapper(eff):
             new_cond = eff.condition.apply(typ, fn)
             new_eff = eff.effect.apply(pddl.ConditionalEffect, ce_wrapper)
             return pddl.ConditionalEffect(new_cond, new_eff)
+
         for _, deriv in enumerate(self.domain.derived_predicates):
             deriv.condition = deriv.condition.apply(typ, fn)
         for action in self.domain.actions:
             action.precondition = action.precondition.apply(typ, fn)
-            action.effect = action.effect.apply(
-                    pddl.ConditionalEffect,
-                    ce_wrapper)
+            action.effect = action.effect.apply(pddl.ConditionalEffect, ce_wrapper)
         self.problem.goal = self.problem.goal.apply(typ, fn)
 
     def _apply_to_all_effects(self, typ, fn):
@@ -145,7 +101,13 @@ class Compilation:
             action.effect = action.effect.apply(typ, fn)
 
     def _collect_predicate_information(self):
-        self.predicates = set([ p.name for p in self.domain.predicates ])
+        self.predicates = set([p.name for p in self.domain.predicates])
+
+        if self.update_runner and self.update_runner.incompatible_update_pred_type == INCOMPATIBLE_UPDATE_PREDICATE_TYPES["compatible_update"]:
+            assert (
+                ('incompatible_update' not in self.predicates) and ('compatible_update' in self.predicates)
+            ), "incompatible_update should not be in predicates"
+
         self.predicate_arity = {}
         for p in self.domain.predicates:
             n = 0
@@ -180,8 +142,19 @@ class Compilation:
         else:
             assert isinstance(cq, pddl.Fact)
             elements = [cq]
-        head = query_predicate_name(query_id) + "(" + (",".join([var_map[x] for x in free_vars]) if has_free_vars else "?0") + ")"
-        tail = [ f.predicate + "(" + ",".join([var_map.get(t, t) for t in f.parameters]) + ")" for f in elements ]
+        head = (
+            query_predicate_name(query_id)
+            + "("
+            + (",".join([var_map[x] for x in free_vars]) if has_free_vars else "?0")
+            + ")"
+        )
+        tail = [
+            f.predicate
+            + "("
+            + ",".join([var_map.get(t, t) for t in f.parameters])
+            + ")"
+            for f in elements
+        ]
         query = "%s <- %s" % (head, ", ".join(tail))
         self._queries[-1].append(query)
         if not has_free_vars:
@@ -200,7 +173,9 @@ class Compilation:
 
     def _rewrite_ontology_and_ucqs(self):
         if self.clipper.supports_simultaneous_rewriting() and len(self._queries) > 0:
-            rewritten_rules = self.clipper.rewrite_all("\n".join(["\n".join(qs) for qs in self._queries]))
+            rewritten_rules = self.clipper.rewrite_all(
+                "\n".join(["\n".join(qs) for qs in self._queries])
+            )
             self._datalog_rules = rewritten_rules
         else:
             self._datalog_rules = self.clipper.rewrite_ontology()
@@ -215,18 +190,23 @@ class Compilation:
 
     def _add_rules_for_missing_predicates(self):
         # TODO(dnh): Leave unused predicates in domain and NOT in ontology untouch
-        appeared_in_domain = set([ p.name for p in self.domain.predicates if not is_coherence_update_predicate_name(p.name)])
+        appeared_in_domain = set(
+            [
+                p.name
+                for p in self.domain.predicates
+                if not is_coherence_update_predicate_name(p.name)
+            ]
+        )
         missing = appeared_in_domain - self.update_runner.atomic_predicates()
         missing_predicates = [p for p in self.domain.predicates if p.name in missing]
         concepts = []
         roles = []
         for pred in missing_predicates:
+            name = parse_name(pred.name)
             if len(pred.parameters) == 1:
-                name = pred.name
-                concepts.append(parse_name(name))
+                concepts.append(name)
             elif len(pred.parameters) == 2:
-                name = pred.name
-                roles.append(parse_name(name))
+                roles.append(name)
             else:
                 raise ValueError("Unexpected predicate arity: %d" % len(p.parameters))
         rules = self.update_runner.run_for_missing_predicates(concepts, roles)
@@ -237,12 +217,19 @@ class Compilation:
             if is_coherence_update_predicate_name(p.name):
                 continue
             p.name = self.clipper.adapt_predicate_name(p.name)
+
         def apply_to_fact(fact):
-            if is_primed_predicate_name(fact.predicate) or is_coherence_update_predicate_name(fact.predicate):
+            if is_primed_predicate_name(
+                fact.predicate
+            ) or is_coherence_update_predicate_name(fact.predicate):
                 return fact
-            return pddl.Fact(self.clipper.adapt_predicate_name(fact.predicate), fact.parameters)
+            return pddl.Fact(
+                self.clipper.adapt_predicate_name(fact.predicate), fact.parameters
+            )
+
         def apply_to_effect(eff):
             return eff.__class__(apply_to_fact(eff.fact))
+
         self._apply_to_all_conditions(pddl.Fact, apply_to_fact)
         self._apply_to_all_effects(pddl.AddEffect, apply_to_effect)
         self._apply_to_all_effects(pddl.DelEffect, apply_to_effect)
@@ -266,7 +253,11 @@ class Compilation:
             if self.expensive_duplicate_filtering:
                 rule = rule.canonical()
             query_id = get_query_id(rule.head.name)
-            if query_id != None and query_id in self._unparameterized_queries or (self.update_runner and is_update_predicate_name(rule.head.name)):
+            if (
+                query_id != None
+                and query_id in self._unparameterized_queries
+                or (self.update_runner and is_update_predicate_name(rule.head.name))
+            ):
                 rule.head.parameters = []
             if self.filter_duplicates:
                 old_size = len(self._datalog_rules)
@@ -279,10 +270,13 @@ class Compilation:
             self._datalog_rules = list(self._datalog_rules)
 
     def _drop_irrelevant_datalog_rules(self):
-        necessary_predicates = self.ucq_collector.queried_predicates \
-            | set([query_predicate_name(i) for i in range(len(self.ucq_collector.ucqs))])
+        necessary_predicates = self.ucq_collector.queried_predicates | set(
+            [query_predicate_name(i) for i in range(len(self.ucq_collector.ucqs))]
+        )
         if not self.update_runner:
-            necessary_predicates = necessary_predicates | set([INCONSISTENCY_PREDICATE_NAME])
+            necessary_predicates = necessary_predicates | set(
+                [INCONSISTENCY_PREDICATE_NAME]
+            )
 
         conditioned_predicates = necessary_predicates
         for rule in self._datalog_rules:
@@ -291,7 +285,9 @@ class Compilation:
                     t = t.element
                 if isinstance(t, datalog.Atom):
                     conditioned_predicates.add(t.name)
-            if self.update_runner and is_coherence_update_predicate_name(rule.head.name):
+            if self.update_runner and is_coherence_update_predicate_name(
+                rule.head.name
+            ):
                 conditioned_predicates.add(rule.head.name)
         while True:
             dr = []
@@ -313,6 +309,16 @@ class Compilation:
 
     def _compile_datalog_rules(self):
         self.predicates_in_ontology = set(self.ucq_collector.queried_predicates)
+        if (
+            self.update_runner
+            and self.update_runner.incompatible_update_pred_type
+            == INCOMPATIBLE_UPDATE_PREDICATE_TYPES["compatible_update"]
+        ):
+            self._datalog_rules, compatible_update = transform_incompatible_update(
+                self._datalog_rules
+            )
+            self.domain.derived_predicates.append(compatible_update)
+
         for rule in self._datalog_rules:
             subst = {}
             num_ext = 0
@@ -328,24 +334,34 @@ class Compilation:
                     num_ext += 1
 
             # dnh: Do not transform update predicates
-            if self.update_runner and is_coherence_update_predicate_name(rule.head.name):
+            if self.update_runner and is_coherence_update_predicate_name(
+                rule.head.name
+            ):
                 primed_predicate_name = rule.head.name
             else:
                 primed_predicate_name = prime_predicate_name(rule.head.name)
             predicate = pddl.Predicate(
-                    primed_predicate_name,
-                    [pddl.TypedList([subst[x] for x in rule.head.parameters])])
+                primed_predicate_name,
+                [pddl.TypedList([subst[x] for x in rule.head.parameters])],
+            )
             is_update_rule = is_coherence_update_predicate_name(rule.head.name)
             if not primed_predicate_name in self.predicates:
                 self.domain.predicates.append(predicate)
                 self.predicates.add(primed_predicate_name)
-                if rule.head.name in self.predicates \
-                        and not rule.head.name.startswith(QUERY_PREDICATE_NAME) \
-                        and rule.head.name != INCONSISTENCY_PREDICATE_NAME \
-                        and not is_update_rule:
-                    self.domain.derived_predicates.append(pddl.DerivedPredicate(
-                        predicate,
-                        pddl.Fact(rule.head.name, [subst[x] for x in rule.head.parameters])))
+                if (
+                    rule.head.name in self.predicates
+                    and not rule.head.name.startswith(QUERY_PREDICATE_NAME)
+                    and rule.head.name != INCONSISTENCY_PREDICATE_NAME
+                    and not is_update_rule
+                ):
+                    self.domain.derived_predicates.append(
+                        pddl.DerivedPredicate(
+                            predicate,
+                            pddl.Fact(
+                                rule.head.name, [subst[x] for x in rule.head.parameters]
+                            ),
+                        )
+                    )
 
             self.predicates_in_ontology.add(rule.head.name)
 
@@ -358,45 +374,60 @@ class Compilation:
                 if isinstance(t, datalog.Atom):
                     # dnh: Do not transform body if it's update predicates
                     if self.update_runner and is_update_rule:
-                        cond.append(pddl.Fact(
-                            t.name,
-                            [ subst[x] for x in t.parameters ]))
+                        cond.append(pddl.Fact(t.name, [subst[x] for x in t.parameters]))
                     else:
-                        cond.append(pddl.Fact(
-                            prime_predicate_name(t.name),
-                            [ subst[x] for x in t.parameters ]))
+                        cond.append(
+                            pddl.Fact(
+                                prime_predicate_name(t.name),
+                                [subst[x] for x in t.parameters],
+                            )
+                        )
                     self.predicates_in_ontology.add(t.name)
                 else:
                     # TODO correct?
-                    cond.append(pddl.Comparison(
-                        '=',
-                        pddl.SimpleFExpression(subst[t.left]),
-                        pddl.SimpleFExpression(subst[t.right])))
+                    cond.append(
+                        pddl.Comparison(
+                            "=",
+                            pddl.SimpleFExpression(subst[t.left]),
+                            pddl.SimpleFExpression(subst[t.right]),
+                        )
+                    )
                 if neg:
                     cond[-1] = pddl.Not(cond[-1])
             cond = pddl.And(cond)
             # dnh: Existential quantifiers are required for updating rules
             if num_ext > 0:
-                cond = pddl.Exists(
-                        get_parameter_list(num_ext, "?y%d"),
-                        cond)
-            self.domain.derived_predicates.append(pddl.DerivedPredicate(predicate, cond))
+                cond = pddl.Exists(get_parameter_list(num_ext, "?y%d"), cond)
+            self.domain.derived_predicates.append(
+                pddl.DerivedPredicate(predicate, cond)
+            )
 
     def _unprime_conditions_and_enforce_consistency(self):
         def unprimer(fact):
             if not fact.predicate in self.predicates:
-                assert is_primed_predicate_name(fact.predicate), "%s does not appear in predicates" % fact.predicate
+                assert is_primed_predicate_name(fact.predicate), (
+                    "%s does not appear in predicates" % fact.predicate
+                )
                 unprimed = unprime_predicate_name(fact.predicate)
                 if unprimed.startswith(QUERY_PREDICATE_NAME.lower()):
                     return pddl.Falsity()
                 return pddl.Fact(unprimed, fact.parameters)
             return fact
+
         self._apply_to_all_conditions(pddl.Fact, unprimer)
-        if (prime_predicate_name(INCONSISTENCY_PREDICATE_NAME) in self.predicates) and not self.update_runner:
-            is_consistent = pddl.Not(pddl.Fact(prime_predicate_name(INCONSISTENCY_PREDICATE_NAME), []))
+        if (
+            prime_predicate_name(INCONSISTENCY_PREDICATE_NAME) in self.predicates
+        ) and not self.update_runner:
+            is_consistent = pddl.Not(
+                pddl.Fact(prime_predicate_name(INCONSISTENCY_PREDICATE_NAME), [])
+            )
             for action in self.domain.actions:
-                action.precondition = pddl.And([is_consistent, action.precondition]).simplified()
-            self.problem.goal = pddl.And([is_consistent, self.problem.goal]).simplified()
+                action.precondition = pddl.And(
+                    [is_consistent, action.precondition]
+                ).simplified()
+            self.problem.goal = pddl.And(
+                [is_consistent, self.problem.goal]
+            ).simplified()
         else:
             for action in self.domain.actions:
                 action.precondition = pddl.And([action.precondition]).simplified()
@@ -418,7 +449,7 @@ class Compilation:
             print(rule)
         queries = list(sorted(queries))
         i = 0
-        for (j, qs) in enumerate(self._queries):
+        for j, qs in enumerate(self._queries):
             print("")
             for q in qs:
                 print("%% " + q)
@@ -447,8 +478,14 @@ class Compilation:
                 print("%% %s" % rule)
             print("")
 
-        static_datalog_atoms = sorted([p for p in self.predicates_in_ontology
-            if not prime_predicate_name(p) in self.predicates and not is_coherence_update_predicate_name(p)])
+        static_datalog_atoms = sorted(
+            [
+                p
+                for p in self.predicates_in_ontology
+                if not prime_predicate_name(p) in self.predicates
+                and not is_coherence_update_predicate_name(p)
+            ]
+        )
         if len(static_datalog_atoms) > 0:
             print("%% CONCEPTS/RELATIONS NOT DERIVABLE FROM ONTOLOGY:")
             for name in static_datalog_atoms:
@@ -467,15 +504,44 @@ if __name__ == "__main__":
     parser.add_argument("--output-csv", default="results.csv")
     parser.add_argument("--benchmark-name", default="test 1")
 
-    parser.add_argument("--clipper-mqf", default=False, action="store_true", help="Use multiple-query feature of clipper.")
+    parser.add_argument(
+        "--updating-pred-type", default=UPDATING_PREDICATE_TYPES["derived_predicate"]
+    )
+    parser.add_argument(
+        "--incompatible-update-pred-type",
+        default=INCOMPATIBLE_UPDATE_PREDICATE_TYPES["incompatible_update"],
+    )
+
+    parser.add_argument(
+        "--clipper-mqf",
+        default=False,
+        action="store_true",
+        help="Use multiple-query feature of clipper.",
+    )
     parser.add_argument("--clipper", default="clipper.sh")
     parser.add_argument("--out-domain", "-d", default="domain.pddl")
     parser.add_argument("--out-problem", "-p", default="problem.pddl")
-    parser.add_argument("--verbose", "-v", default=False, action='store_true')
+    parser.add_argument("--verbose", "-v", default=False, action="store_true")
     parser.add_argument("--no-filter-unimportant", default=False, action="store_true")
     parser.add_argument("--no-expensive-filtering", default=False, action="store_true")
     parser.add_argument("--debug", default=False, action="store_true")
+
     args = parser.parse_args()
+
+    if args.updating_pred_type not in UPDATING_PREDICATE_TYPES:
+        print(
+            "Invalid updating predicate type. Available types are: %s"
+            % ", ".join(UPDATING_PREDICATE_TYPES.keys())
+        )
+        sys.exit(1)
+
+    if args.incompatible_update_pred_type not in INCOMPATIBLE_UPDATE_PREDICATE_TYPES:
+        print(
+            "Invalid incompatible update predicate type. Available types are: %s"
+            % ", ".join(INCOMPATIBLE_UPDATE_PREDICATE_TYPES.keys())
+        )
+        sys.exit(1)
+
     clipper = shutil.which(args.clipper)
     if clipper is None:
         print("clipper was not found.")
@@ -487,7 +553,7 @@ if __name__ == "__main__":
     with open(args.problem) as f:
         p = pddl.parse_problem(f.read())
 
-    with open(args.output_csv, 'a') as f:
+    with open(args.output_csv, "a") as f:
         f.write(args.benchmark_name + ",")
 
     do_coherence_update = args.rls != "" and args.nmo != ""
@@ -496,19 +562,23 @@ if __name__ == "__main__":
             nmo_path=args.nmo,
             rls_file_path=args.rls,
             ontology_file_path=args.ontology,
-            timer_output=args.output_csv
+            timer_output=args.output_csv,
+            updating_pred_type=args.updating_pred_type,
+            incompatible_update_pred_type=args.incompatible_update_pred_type,
         )
     else:
         update_runner = None
 
-    compilation = Compilation(
-        d, p, clipper,
-        filter_unimportant_atoms = not args.no_filter_unimportant,
-        expensive_duplicate_filtering = not args.no_expensive_filtering,
+    compiler = Compiler(
+        d,
+        p,
+        clipper,
+        filter_unimportant_atoms=not args.no_filter_unimportant,
+        expensive_duplicate_filtering=not args.no_expensive_filtering,
         update_runner=update_runner,
-        timer_output=args.output_csv
+        timer_output=args.output_csv,
     )
-    compilation()
+    compiler()
 
     d.constants = p.objects
     p.objects = None
@@ -517,4 +587,4 @@ if __name__ == "__main__":
     with open(args.out_problem, "w") as f:
         f.write(str(p))
     if args.verbose:
-        compilation.print_compilation_information()
+        compiler.print_compilation_information()
