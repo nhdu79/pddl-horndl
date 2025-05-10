@@ -25,6 +25,7 @@ from planning.logic import (
     Or,
     Predicate,
     SimpleFExpression,
+    TypedList,
 )
 from utils.functions import read_predicates, read_unary_predicate
 from utils.functions import get_repr
@@ -41,9 +42,9 @@ def transform_incompatible_update(rules):
     """
     new_rules = []
     cond = []
-    params = set()
     for rule in rules:
         if rule.head.name == INCOMPATIBLE_UPDATE:
+            params = set()
             disjuctions = []
             for literal in rule.tail:
                 if isinstance(literal, Negated):
@@ -52,7 +53,6 @@ def transform_incompatible_update(rules):
                         right_exp = SimpleFExpression(ensure_pddl_parameter(literal.element.right))
                         f = Comparison("=", left_exp, right_exp)
                         neg = f
-                        params.update([f.left.__str__(), f.right.__str__()])
                     else:
                         raise ValueError("Unknown literal type: %r" % literal)
                 elif isinstance(literal, Equality):
@@ -60,18 +60,19 @@ def transform_incompatible_update(rules):
                     right_exp = SimpleFExpression(ensure_pddl_parameter(literal.right))
                     f = Comparison("=", left_exp, right_exp)
                     neg = f.negate()
-                    params.update([f.left.__str__(), f.right.__str__()])
                 else:
                     f = Fact(literal.name, [ensure_pddl_parameter(x) for x in [*literal.parameters]])
                     neg = f.negate()
-                    params.update(f.parameters)
+                params.update(f.free_vars())
                 disjuctions.append(neg)
-            cond.append(Or(disjuctions))
+            # WARNING: PARAMETERS MUST BE A LIST
+            tl = [TypedList([*params])]
+            forall = Forall(tl, Or(disjuctions))
+            cond.append(forall)
         else:
             new_rules.append(rule)
 
     cond = And(cond)
-    cond = Forall(params, cond)
     predicate = Predicate(COMPATIBLE_UPDATE, [])
     compatible_update = DerivedPredicate(predicate, cond)
 
