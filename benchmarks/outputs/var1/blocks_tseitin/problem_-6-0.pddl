@@ -1,0 +1,11 @@
+(define (problem BLOCKS-6-0)
+(:domain BLOCKS)
+(:init
+       (ontable C T)
+       (ontable B T)
+       (onblock D A)
+       (onblock A C)
+       (onblock F E)
+       (onblock E B))
+(:goal (and (DATALOG_ON A E) (DATALOG_ON B A) (DATALOG_ON C B) (DATALOG_ON E F) (DATALOG_ON F D) (not (updating))))
+)
