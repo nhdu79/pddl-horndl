@@ -1,7 +1,6 @@
 #!/bin/python3
 import math
 import random
-from itertools import product
 
 def inline(t, drone_arr):
     for x in drone_arr:
@@ -11,11 +10,11 @@ def inline(t, drone_arr):
     return False
 
 def generate_planning_problem(board_size, drone_number, wetdrone_number, lowvisibility, humantree_number, filename):
-	
+
 	#~ Inizializzo il problema di planning
     planning_domain = """(define (problem drone_problem)
 	(:domain drone)\n"""
-	
+
 	#~ Genero gli individui in :objects
     object_arr = []
     j = 0
@@ -46,7 +45,7 @@ def generate_planning_problem(board_size, drone_number, wetdrone_number, lowvisi
 	#
 	#~ Definisco :init
     planning_domain += "\t(:init\n"
-    
+
     board_arr = list(object_arr)
     pic = ["-"] * pow(board_size,2)
     drone_arr = []
@@ -126,13 +125,13 @@ def generate_planning_problem(board_size, drone_number, wetdrone_number, lowvisi
              planning_domain += "\t\t(near " + board_arr[i*board_size+j] + " " + board_arr[(i+1)*board_size+(j-1)] + ")\n"
 	#~ Chiudo la parentesi di init
     planning_domain += "\t)\n"
-	
+
 	#~ Definisco il goal
     planning_domain += "\t(:goal (not (mko (exists (?x ?y) \n \t\t (and \n \t\t\t (RiskOfPhysicalDamage ?x) \n \t\t\t (RiskOfPhysicalDamage ?y) \n \t\t\t (near ?x ?y) \n \t\t )) \n \t )) \n \t)\n"
-	
+
 	#~ Chiudo la parentesi di domain
     planning_domain += "\n)"
-	
+
 	#~ Creo il file e gli scrivo dentro planning_domain
     output_file = open(filename, "w")
     output_file.write(planning_domain)

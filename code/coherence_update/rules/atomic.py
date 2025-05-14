@@ -1,13 +1,24 @@
 # General rules for deleting atomic concepts and roles
 # ~ First 2 bullet points/Sec 2.4
-from coherence_update.rules.symbols import RULE_SEPARATOR, NOT, INS, DEL, REQUEST, INCOMPATIBLE_UPDATE, UPDATING, END
+from coherence_update.rules.symbols import (
+    DEL,
+    END,
+    INCOMPATIBLE_UPDATE,
+    INS,
+    NOT,
+    REQUEST,
+    RULE_SEPARATOR,
+    UPDATING,
+)
 
 
-def build_insert_and_delete_rules_and_incompatible_update_for_atomic_concepts(a_concepts):
+def build_insert_and_delete_rules_and_incompatible_update_for_atomic_concepts(
+    a_concepts,
+):
     """
-        Build rules for deleting atomic concepts and their incompatible rules
-        param:
-            a_concepts: string[]
+    Build rules for deleting atomic concepts and their incompatible rules
+    param:
+        a_concepts: string[]
     """
     rules = []
     for a_concept in a_concepts:
@@ -21,7 +32,7 @@ def build_insert_and_delete_rules_and_incompatible_update_for_atomic_concepts(a_
 
 def build_updating_rules_for_atomic_concepts(a_concepts):
     """
-        Supplement for above function
+    Supplement for above function
     """
     rules = []
     for a_concept in a_concepts:
@@ -34,9 +45,9 @@ def build_updating_rules_for_atomic_concepts(a_concepts):
 
 def build_insert_and_delete_rules_and_incompatible_update_for_atomic_roles(roles):
     """
-        Build rules for deleting roles and their incompatible rules
-        param:
-            roles: string[]
+    Build rules for deleting roles and their incompatible rules
+    param:
+        roles: string[]
     """
     rules = []
     for role in roles:
@@ -50,7 +61,7 @@ def build_insert_and_delete_rules_and_incompatible_update_for_atomic_roles(roles
 
 def build_updating_rules_for_atomic_roles(roles):
     """
-        Supplement for above function
+    Supplement for above function
     """
     rules = []
     for role in roles:
@@ -61,12 +72,11 @@ def build_updating_rules_for_atomic_roles(roles):
     return rules
 
 
-
 def build_delete_rules_and_incompatible_update_for_functs(functs):
     """
-        Build rules for funct(P)
-        param:
-            functs: string[]
+    Build rules for funct(P)
+    param:
+        functs: string[]
     """
     rules = []
     for repr in functs:
@@ -79,7 +89,7 @@ def build_delete_rules_and_incompatible_update_for_functs(functs):
 
 def build_updating_rules_for_functs(functs):
     """
-        Supplement for above function
+    Supplement for above function
     """
     rules = []
     for repr in functs:
@@ -92,9 +102,9 @@ def build_updating_rules_for_functs(functs):
 
 def build_delete_rules_and_incompatible_update_for_inv_functs(inv_functs):
     """
-        Build rules for funct(P)
-        param:
-            inv_functs: string[]
+    Build rules for funct(P)
+    param:
+        inv_functs: string[]
     """
     rules = []
     for repr in inv_functs:
@@ -107,7 +117,7 @@ def build_delete_rules_and_incompatible_update_for_inv_functs(inv_functs):
 
 def build_updating_rules_for_inv_functs(inv_functs):
     """
-        Supplement for above function
+    Supplement for above function
     """
     rules = []
     for repr in inv_functs:

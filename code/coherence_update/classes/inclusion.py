@@ -1,27 +1,31 @@
 # from hashlib import md5
 import pprint
+
 from utils.functions import get_repr
 
 INCLUSION_TYPES_ORDER = [
     # positive
-    "aAInaBSub", # 1. appearing atomic concepts
-    "rInPSub", # 2. appearing atomic roles
-    "rInPMinusSub", # 3. appearing inverse roles
-    "rMinusInPSub", # 4. appearing inverse roles
-    "ePInaBSub", # 5. dom
-    "ePMinusInaBSub", # 6. rng
+    "aAInaBSub",  # 1. appearing atomic concepts
+    "rInPSub",  # 2. appearing atomic roles
+    "rInPMinusSub",  # 3. appearing inverse roles
+    "rMinusInPSub",  # 4. appearing inverse roles
+    "ePInaBSub",  # 5. dom
+    "ePMinusInaBSub",  # 6. rng
     # negative
-    "aAInNotaBSub", # 7. appearing atomic concepts
+    "aAInNotaBSub",  # 7. appearing atomic concepts
     "aBInNotePSub",
     "ePInNotaBSub",
     "aBInNotePMinusSub",
     "ePMinusInNotaBSub",
     "rInNotPSub",
-    "rInNotPMinusSub"
+    "rInNotPMinusSub",
 ]
 
+
 class Inclusion:
-    def __init__(self, incl_type, left_uri, right_uri, left_atomic_uri, right_atomic_uri):
+    def __init__(
+        self, incl_type, left_uri, right_uri, left_atomic_uri, right_atomic_uri
+    ):
         """
         :param inclusion: string separated by ','
             inclusion_type: positive or negative
@@ -36,22 +40,21 @@ class Inclusion:
         self._left_repr = get_repr(left_uri)
         self._right_repr = get_repr(right_uri)
 
-
     def __dict__(self):
         return {
             "uri": {
                 "left": self.left_uri,
                 "right": self.right_uri,
                 "left_atomic": self.left_atomic_uri,
-                "right_atomic": self.right_atomic_uri
+                "right_atomic": self.right_atomic_uri,
             },
             "repr": {
                 "left": self._left_repr,
                 "right": self._right_repr,
                 "left_atomic": self._left_atomic_repr,
-                "right_atomic": self._right_atomic_repr
+                "right_atomic": self._right_atomic_repr,
             },
-            "incl_type": self.incl_type
+            "incl_type": self.incl_type,
         }
 
     def pprint(self):
@@ -62,7 +65,7 @@ class Inclusion:
 
     def get_left_closure_repr(self):
         """
-            Repr for cl(T) closure; i.e. "root" role/ concept
+        Repr for cl(T) closure; i.e. "root" role/ concept
         """
         return self._left_atomic_repr
 
@@ -71,7 +74,7 @@ class Inclusion:
 
     def get_left_repr(self):
         """
-            Repr for update rules
+        Repr for update rules
         """
         return self._left_repr
 

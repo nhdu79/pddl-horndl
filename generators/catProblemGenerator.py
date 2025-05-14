@@ -1,7 +1,6 @@
 #!/bin/python3
 import math
 import random
-from itertools import product
 
 
 def generate_planning_problem(obj, bomb_perc, cat_perc, filename):

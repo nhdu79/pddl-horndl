@@ -1,5 +1,4 @@
 #!/bin/python3
-from itertools import product
 
 
 def generate_planning_domain(columns, rows, filename, onto):
