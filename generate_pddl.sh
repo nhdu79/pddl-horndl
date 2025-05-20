@@ -14,7 +14,7 @@ tseitin="code/rewriting/new_tseitin.py"
 rls="code/nemo/t_closure.rls"
 parser="code/utils/parser_wrapper.py"
 
-variants=(var0 var1 var2 var3)
+variants=(original var0 var1 var2 var3)
 tasks=(blocks catOG elevator robot task order trip tripv2)
 
 for variant in ${variants[@]};
@@ -73,7 +73,11 @@ do
       tseitin_domain="benchmarks/outputs/${variant}/${task}_tseitin/domain_${i}.pddl"
       tseitin_problem="benchmarks/outputs/${variant}/${task}_tseitin/problem_${i}.pddl"
 
-      PYTHONPATH=code python3 "$compiler" "$owl" "$input_domain" "$input_problem" -d "$result_domain" -p "$result_problem" --clipper "$clipper" --clipper-mqf  --rls "$rls" --nmo "$nmo" --updating-pred-type "$updating_pred_type" --incompatible-update-pred-type "$incompatible_update_pred_type"$@
+      if [ $variant == "original"]; then
+        PYTHONPATH=code python3 "$compiler" "$owl" "$input_domain" "$input_problem" -d "$result_domain" -p "$result_problem" --clipper "$clipper" --clipper-mqf $@
+      else
+        PYTHONPATH=code python3 "$compiler" "$owl" "$input_domain" "$input_problem" -d "$result_domain" -p "$result_problem" --clipper "$clipper" --clipper-mqf  --rls "$rls" --nmo "$nmo" --updating-pred-type "$updating_pred_type" --incompatible-update-pred-type "$incompatible_update_pred_type"$@
+      fi
 
       PYTHONPATH=code python3 "$tseitin" "$result_domain" "$result_problem" -d "$tseitin_domain" -p "$tseitin_problem" --keep-name$@
 
