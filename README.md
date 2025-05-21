@@ -12,9 +12,10 @@ The following software is required for a complete run of the pipeline written in
   $ git clone https://github.com/ghxiao/clipper
 ```
 * Copy the `clipper.patch` in this repo to the Clipper repo (above)
-* Apply the patch:
+* Apply the patches (2 patches need to be applied):
 ```sh
   $ git am --keep-cr --signoff < clipper.patch
+  $ git am --keep-cr --signoff < support_multiple_queries_with_the_same_body.patch
 ```
 * Within the Clipper repo, build from source:
 ```sh
@@ -55,7 +56,7 @@ The following software is required for a complete run of the pipeline written in
 
 ## The Benchmark folder:
 * We keep the original .pddl files (domain + problem) from the work of Borgwardt et al. intact in their corresponding subfolders e.g. `benchmarks/robot`
-* All outputs of our pipeline are stationed in `benchmarks/outputs/`
+* All outputs of our pipeline are stored in `benchmarks/outputs/`
 
 ## Mapping from Benchmark names in paper to folder names:
 
