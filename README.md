@@ -12,9 +12,10 @@ The following software is required for a complete run of the pipeline written in
   $ git clone https://github.com/ghxiao/clipper
 ```
 * Copy the `clipper.patch` in this repo to the Clipper repo (above)
-* Apply the patch:
+* Apply the patches (2 patches need to be applied):
 ```sh
   $ git am --keep-cr --signoff < clipper.patch
+  $ git am --keep-cr --signoff < support_multiple_queries_with_the_same_body.patch
 ```
 * Within the Clipper repo, build from source:
 ```sh
@@ -46,7 +47,7 @@ The following software is required for a complete run of the pipeline written in
   * If Tseitin transformation is turned on, then the file (domain/problem) will be in `[benchmark_name]_tseitin`
   * Otherwise, it will only be in `[benchmark_name]_no_tseitin`
 
-#### How do I run the the planning benchmarks?
+#### How do I run the planning benchmarks?
 * Detailed instructions on the official Fastdownward webpage: https://www.fast-downward.org/latest/documentation/planner-usage/
     - Quick start:
     ``` shell
@@ -55,7 +56,7 @@ The following software is required for a complete run of the pipeline written in
 
 ## The Benchmark folder:
 * We keep the original .pddl files (domain + problem) from the work of Borgwardt et al. intact in their corresponding subfolders e.g. `benchmarks/robot`
-* All of the outputs of our pipeline are stationed in `benchmarks/outputs/`
+* All of the outputs of our pipeline are stored in `benchmarks/outputs/`
 
 ## Mapping from Benchmark names in paper to folder names:
 
