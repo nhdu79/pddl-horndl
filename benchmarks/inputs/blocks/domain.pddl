@@ -17,8 +17,10 @@
                      (not (mko (exists (?x) (Holding ?x))))
   )
   :effect (and (not (on ?x ?y))
-               (Holding ?x)
-               (not (Blocked ?y))
+    (not (on_block ?x ?y))
+    (not (on_table ?x ?y))
+    (Holding ?x)
+    (not (Blocked ?y))
   )
 )
 

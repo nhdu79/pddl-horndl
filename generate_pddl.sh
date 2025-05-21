@@ -47,7 +47,7 @@ do
       elements=(4 5 6 7 10 15 20 25 30 35 40 45 50 55 60)
     fi
 
-    prefix="benchmarks/input/$task"
+    prefix="benchmarks/inputs/$task"
 
     for i in ${elements[@]};
     do
@@ -73,7 +73,7 @@ do
       tseitin_domain="benchmarks/outputs/${variant}/${task}_tseitin/domain_${i}.pddl"
       tseitin_problem="benchmarks/outputs/${variant}/${task}_tseitin/problem_${i}.pddl"
 
-      if [ $variant == "original"]; then
+      if [ $variant == "original" ]; then
         PYTHONPATH=code python3 "$compiler" "$owl" "$input_domain" "$input_problem" -d "$result_domain" -p "$result_problem" --clipper "$clipper" --clipper-mqf $@
       else
         PYTHONPATH=code python3 "$compiler" "$owl" "$input_domain" "$input_problem" -d "$result_domain" -p "$result_problem" --clipper "$clipper" --clipper-mqf  --rls "$rls" --nmo "$nmo" --updating-pred-type "$updating_pred_type" --incompatible-update-pred-type "$incompatible_update_pred_type"$@
