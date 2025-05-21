@@ -1,6 +1,6 @@
 ## Prerequisite:
 
-The following software is required for a complete run of the pipeline written in `run.sh`:
+The following software is required for running `generate_pddl.sh`, which generates the compiled PDDL files for the benchmarks:
 - Patched version of Clipper (with `clipper.patch`)
 - Nemo
 - Fast Downward

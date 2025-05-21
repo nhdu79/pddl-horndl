@@ -47,25 +47,25 @@ do
       elements=(4 5 6 7 10 15 20 25 30 35 40 45 50 55 60)
     fi
 
-    prefix="benchmarks/$task"
+    prefix="benchmarks/input/$task"
 
     for i in ${elements[@]};
     do
       if [ $task == "robot" ]; then
-        owl="$prefix/original/TTL${i}.owl"
-        input_domain="$prefix/original/robotDomain${i}.pddl"
+        owl="$prefix/TTL${i}.owl"
+        input_domain="$prefix/robotDomain${i}.pddl"
       elif [ $task == "blocks" ]; then
-        owl="$prefix/original/blocks.owl"
-        input_domain=$prefix/original/domain.pddl
+        owl="$prefix/blocks.owl"
+        input_domain=$prefix/domain.pddl
       else
-        owl=$prefix/original/TTL.owl
-        input_domain=$prefix/original/domain.pddl
+        owl=$prefix/TTL.owl
+        input_domain=$prefix/domain.pddl
       fi
 
       if [ $task == "blocks" ]; then
-        input_problem="$prefix/original/probBLOCKS${i}.pddl"
+        input_problem="$prefix/probBLOCKS${i}.pddl"
       else
-        input_problem="$prefix/original/${task}Problem${i}.pddl"
+        input_problem="$prefix/${task}Problem${i}.pddl"
       fi
 
       result_domain="benchmarks/outputs/${variant}/${task}_no_tseitin/domain_${i}.pddl"
