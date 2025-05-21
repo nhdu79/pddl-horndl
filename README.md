@@ -3,9 +3,9 @@
 The following software is required for a complete run of the pipeline written in `run.sh`:
 - Patched version of Clipper (with `clipper.patch`)
 - Nemo
-- Fastdownward
+- Fast Downward
 
-## Installation Intructions:
+## Installation Instructions:
 #### Clipper:
 * Clone the repo:
 ```sh
@@ -28,7 +28,7 @@ The following software is required for a complete run of the pipeline written in
   - Extract `tar -xvf [your-chosen-nemo-release].tar`
 * There will be a binary `nmo` file in the extracted folder, whose path we will use in later in `run.sh`
 
-#### Fastdownward:
+#### Fast Downward:
 * Detailed installation on [the official Webpage](https://www.fast-downward.org/latest/documentation/quick-start/)
 
 
@@ -37,17 +37,17 @@ The following software is required for a complete run of the pipeline written in
 #### Configuring the corresponding paths in your system:
 * The script in `generate_pddl.sh` requires the path to `clipper.sh` from the patched Clipper above, the path to a command-line client `nmo` for Nemo, and the path to `fast-downward.py` from the planner
   * For Clipper, the path is `/your_full_path_to_clipper/clipper/clipper-distribution/target/clipper/clipper.sh`
-  * For nmo, the path is `your_full_path_to_nemo/nmo`
+  * For Nemo, the path is `your_full_path_to_nemo/nmo`
   * Additionally, we use a parser from the PDDL Validator [VAL](https://github.com/KCL-Planning/VAL)
     - After installation, change the `parser` variable in the script to the path pointing to the VAL Parser file
 
 #### Where are the written .pddl files?
 * By default (in `generate_pddl.sh`), they are in `/benchmarks/outputs/[variant]/[corresponding-folder-name-of-benchmark]/`
   * If Tseitin transformation is turned on, then the file (domain/problem) will be in `[benchmark_name]_tseitin`
-  * Otherwise, it will only be in `[benchmark_name]_no_tseitin`
+  * Otherwise, it will be in `[benchmark_name]_no_tseitin`
 
-#### How do I run the the planning benchmarks?
-* Detailed instructions on the official Fastdownward webpage: https://www.fast-downward.org/latest/documentation/planner-usage/
+#### How do I run the planning benchmarks?
+* Detailed instructions on the official Fast Downward webpage: https://www.fast-downward.org/latest/documentation/planner-usage/
     - Quick start:
     ``` shell
         fast-downward.py domain.pddl problem.pddl --search "lazy_greedy([ff()], preferred=[ff()])"
@@ -55,14 +55,14 @@ The following software is required for a complete run of the pipeline written in
 
 ## The Benchmark folder:
 * We keep the original .pddl files (domain + problem) from the work of Borgwardt et al. intact in their corresponding subfolders e.g. `benchmarks/robot`
-* All of the outputs of our pipeline are stationed in `benchmarks/outputs/`
+* All outputs of our pipeline are stationed in `benchmarks/outputs/`
 
 ## Mapping from Benchmark names in paper to folder names:
 
-* Cats$$^*$$ => catOG
+* Cats^* => catOG
 * Elevator => elevator
 * TPSA => order
-* Robot$$^*$$ => robot
+* Robot^* => robot
 * VTA => trip
 * VTA-Roles => tripv2
 * TaskAssign => task
