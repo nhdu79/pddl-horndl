@@ -11,3 +11,4 @@ csvs/*
 logs/
 # ignore venv
 .venv/
+result.csv
