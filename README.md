@@ -1,9 +1,10 @@
 ## Prerequisite:
 
-The following software is required for running `generate_pddl.sh`, which generates the compiled PDDL files for the benchmarks:
+The following software is required for running `generate_pddl.py`, which generates the compiled PDDL files for the benchmarks:
 - Patched version of Clipper (with `clipper.patch`)
-- Nemo
+- Nemo (required for the `core` fragment only)
 - Fast Downward
+- VAL Parser (optional — used for PDDL validation; compilation proceeds without it)
 
 ## Installation Instructions:
 #### Clipper:
@@ -27,25 +28,47 @@ The following software is required for running `generate_pddl.sh`, which generat
 * (From [Nemo](https://github.com/knowsys/nemo) repo): The fastest way to run Nemo is to use system-specific binaries of our command-line client. Archives with pre-compiled binaries for various platforms are available from the Nemo releases page
   - Download a precompiled binary from releases: https://github.com/knowsys/nemo/releases
   - Extract `tar -xvf [your-chosen-nemo-release].tar`
-* There will be a binary `nmo` file in the extracted folder, whose path we will use in later in `run.sh`
+* There will be a binary `nmo` file in the extracted folder; add its full path to `_NMO_CANDIDATES` in `generate_pddl.py`
 
 #### Fast Downward:
 * Detailed installation on [the official Webpage](https://www.fast-downward.org/latest/documentation/quick-start/)
 
 
-## Running the compilation (`generate_pddl.sh`):
+## Running the compilation (`generate_pddl.py`):
 
 #### Configuring the corresponding paths in your system:
-* The script in `generate_pddl.sh` requires the path to `clipper.sh` from the patched Clipper above, the path to a command-line client `nmo` for Nemo, and the path to `fast-downward.py` from the planner
-  * For Clipper, the path is `/your_full_path_to_clipper/clipper/clipper-distribution/target/clipper/clipper.sh`
-  * For Nemo, the path is `your_full_path_to_nemo/nmo`
-  * Additionally, we use a parser from the PDDL Validator [VAL](https://github.com/KCL-Planning/VAL)
-    - After installation, change the `parser` variable in the script to the path pointing to the VAL Parser file
+* `generate_pddl.py` automatically detects tool paths by trying a list of known locations in order. Add your machine's paths to the relevant candidate lists near the top of the script if they are not already present:
+  * `CLIPPER` — required for all runs.
+  * `_NMO_CANDIDATES` — required for the `core` fragment only; `horn`-only runs work without Nemo.
+  * `_PARSER_CANDIDATES` — optional; if the [VAL](https://github.com/KCL-Planning/VAL) Parser binary is not found, PDDL validation is skipped with a warning and compilation still completes.
+
+#### Basic usage:
+```sh
+# Run with defaults (fragment: core, variant: var0, task: blocks)
+python3 generate_pddl.py
+
+# Choose a DL-Lite fragment
+python3 generate_pddl.py --fragments horn
+python3 generate_pddl.py --fragments core horn   # or --all-fragments
+
+# Run specific variants and/or tasks
+python3 generate_pddl.py --fragments horn --variants var0 var1 --tasks blocks robot
+
+# Run the full benchmark suite
+python3 generate_pddl.py --all-fragments --all-variants --all-tasks
+
+# Show all available options
+python3 generate_pddl.py --help
+```
+
+Available fragments: `core`, `horn`  
+Available variants: `original`, `var0`, `var1`, `var2`, `var3`  
+Available tasks: `blocks`, `catOG`, `elevator`, `robot`, `task`, `order`, `trip`, `tripv2`
 
 #### Where are the written .pddl files?
-* By default (in `generate_pddl.sh`), they are in `/benchmarks/outputs/[variant]/[corresponding-folder-name-of-benchmark]/`
-  * If Tseitin transformation is turned on, then the file (domain/problem) will be in `[benchmark_name]_tseitin`
-  * Otherwise, it will be in `[benchmark_name]_no_tseitin`
+* Outputs are written to `benchmarks/outputs/[fragment]/[variant]/[task]/`
+  * With Tseitin transformation: `[task]_tseitin/domain_[i].pddl` and `[task]_tseitin/problem_[i].pddl`
+  * Without: `[task]_no_tseitin/domain_[i].pddl` and `[task]_no_tseitin/problem_[i].pddl`
 
 #### How do I run the planning benchmarks?
 * Detailed instructions on the official Fast Downward webpage: https://www.fast-downward.org/latest/documentation/planner-usage/

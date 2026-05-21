@@ -1,0 +1,7 @@
+iniconfig==2.3.0
+packaging==26.2
+pluggy==1.6.0
+Pygments==2.20.0
+pyparsing==3.3.2
+pytest==9.0.3
+rdflib==7.6.0

@@ -47,12 +47,5 @@ def get_parameter_list(length, var_name="?x%d"):
         return [pddl.TypedList([var_name % j for j in range(length)])]
 
 
-def pddl_predicate(name, num_parameters, primed=False):
-    return pddl.Predicate(
-        prime_predicate_name(name) if primed else name,
-        get_parameter_list(num_parameters),
-    )
-
-
 def encodes_inconsistency(head):
     return isinstance(head, datalog.Falsity) or head.name == "nothing"

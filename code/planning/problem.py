@@ -1,5 +1,5 @@
+from coherence_update.rules.symbols import UPDATING
 from planning.logic import And, Fact, Not
-from planning.domain import UPDATING
 
 class Problem:
     def __init__(self):

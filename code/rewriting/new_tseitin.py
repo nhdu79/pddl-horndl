@@ -20,14 +20,13 @@ def get_params(el):
         breakpoint()
 
 class Tseitin:
-    def __init__(self,
-                 domain,
-                 problem):
+    def __init__(self, domain, problem, output_csv="results.csv"):
         self.domain = domain
         self.problem = problem
+        self.output_csv = output_csv
 
     def __call__(self):
-        with Timer("tseitin_transformation", file=args.output_csv):
+        with Timer("tseitin_transformation", file=self.output_csv):
             self._derived_predicates_count = 0
             self._new_derived_predicates = []
             self._create_shortcuts_conditions()
@@ -128,28 +127,45 @@ class Tseitin:
                 print("%% %s" % dp)
             print("")
 
-if __name__ == "__main__":
-    p = argparse.ArgumentParser()
-    p.add_argument("domain")
-    p.add_argument("problem")
-    p.add_argument("--out-domain", "-d", default="one-time/outputs/domain_test.pddl")
-    p.add_argument("--out-problem", "-p", default="one-time/outputs/problem_test.pddl")
-    p.add_argument("--verbose", "-v", default=False, action='store_true')
-    p.add_argument("--keep-name", "-n", default=False, action='store_true')
-    p.add_argument("--output-csv", default="results.csv")
-    p.add_argument("--benchmark-name", default="test 1")
-
-    args = p.parse_args()
-    preserve_names = args.keep_name
-    with open(args.domain) as f:
-        d = pddl.parse_domain(f.read(), preserve_predicate_names=preserve_names)
-    with open(args.problem) as f:
-        p = pddl.parse_problem(f.read())
-    tseitin = Tseitin(d, p)
+def tseitin_pddl(
+    in_domain: str,
+    in_problem: str,
+    out_domain: str,
+    out_problem: str,
+    keep_name: bool = False,
+    timer_output: str = "result.csv",
+    verbose: bool = False,
+) -> None:
+    with open(in_domain) as f:
+        domain = pddl.parse_domain(f.read(), preserve_predicate_names=keep_name)
+    with open(in_problem) as f:
+        problem = pddl.parse_problem(f.read())
+    tseitin = Tseitin(domain, problem, output_csv=timer_output)
     tseitin()
-    with open(args.out_domain, "w") as f:
-        f.write(str(d))
-    with open(args.out_problem, "w") as f:
-        f.write(str(p))
-    if args.verbose:
+    with open(out_domain, "w") as f:
+        f.write(str(domain))
+    with open(out_problem, "w") as f:
+        f.write(str(problem))
+    if verbose:
         tseitin.print_information()
+
+
+if __name__ == "__main__":
+    arg_parser = argparse.ArgumentParser()
+    arg_parser.add_argument("domain")
+    arg_parser.add_argument("problem")
+    arg_parser.add_argument("--out-domain", "-d", default="one-time/outputs/domain_test.pddl")
+    arg_parser.add_argument("--out-problem", "-p", default="one-time/outputs/problem_test.pddl")
+    arg_parser.add_argument("--verbose", "-v", default=False, action="store_true")
+    arg_parser.add_argument("--keep-name", "-n", default=False, action="store_true")
+    arg_parser.add_argument("--output-csv", default="results.csv")
+    args = arg_parser.parse_args()
+    tseitin_pddl(
+        in_domain=args.domain,
+        in_problem=args.problem,
+        out_domain=args.out_domain,
+        out_problem=args.out_problem,
+        keep_name=args.keep_name,
+        timer_output=args.output_csv,
+        verbose=args.verbose,
+    )

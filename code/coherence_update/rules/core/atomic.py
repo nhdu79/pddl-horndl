@@ -79,9 +79,9 @@ def build_delete_rules_and_incompatible_update_for_functs(functs):
         functs: string[]
     """
     rules = []
-    for repr in functs:
-        r_del = f"{DEL}{repr}(X,Y){RULE_SEPARATOR}{repr}(X,Y), {INS}{repr}{REQUEST}(X,Z), Y!=Z{END}"
-        r_inc = f"{INCOMPATIBLE_UPDATE}(){RULE_SEPARATOR}{INS}{repr}{REQUEST}(X,Y), {INS}{repr}{REQUEST}(X,Z), Y!=Z{END}"
+    for funct_repr in functs:
+        r_del = f"{DEL}{funct_repr}(X,Y){RULE_SEPARATOR}{funct_repr}(X,Y), {INS}{funct_repr}{REQUEST}(X,Z), Y!=Z{END}"
+        r_inc = f"{INCOMPATIBLE_UPDATE}(){RULE_SEPARATOR}{INS}{funct_repr}{REQUEST}(X,Y), {INS}{funct_repr}{REQUEST}(X,Z), Y!=Z{END}"
         rules.extend([r_del, r_inc])
 
     return rules
@@ -92,9 +92,9 @@ def build_updating_rules_for_functs(functs):
     Supplement for above function
     """
     rules = []
-    for repr in functs:
-        r_update_ins = f"{UPDATING}(){RULE_SEPARATOR}{INS}{repr}{REQUEST}(X,Y){END}"
-        r_update_del = f"{UPDATING}(){RULE_SEPARATOR}{DEL}{repr}{REQUEST}(X,Y){END}"
+    for funct_repr in functs:
+        r_update_ins = f"{UPDATING}(){RULE_SEPARATOR}{INS}{funct_repr}{REQUEST}(X,Y){END}"
+        r_update_del = f"{UPDATING}(){RULE_SEPARATOR}{DEL}{funct_repr}{REQUEST}(X,Y){END}"
         rules.extend([r_update_ins, r_update_del])
 
     return rules
@@ -102,14 +102,14 @@ def build_updating_rules_for_functs(functs):
 
 def build_delete_rules_and_incompatible_update_for_inv_functs(inv_functs):
     """
-    Build rules for funct(P)
+    Build rules for inv_funct(P)
     param:
         inv_functs: string[]
     """
     rules = []
-    for repr in inv_functs:
-        r_del = f"{DEL}{repr}(X,Y){RULE_SEPARATOR}{repr}(X,Y), {INS}{repr}{REQUEST}(Z,Y), X!=Z{END}"
-        r_inc = f"{INCOMPATIBLE_UPDATE}(){RULE_SEPARATOR}{INS}{repr}{REQUEST}(X,Y), {INS}{repr}{REQUEST}(Z,Y), X!=Z{END}"
+    for funct_repr in inv_functs:
+        r_del = f"{DEL}{funct_repr}(X,Y){RULE_SEPARATOR}{funct_repr}(X,Y), {INS}{funct_repr}{REQUEST}(Z,Y), X!=Z{END}"
+        r_inc = f"{INCOMPATIBLE_UPDATE}(){RULE_SEPARATOR}{INS}{funct_repr}{REQUEST}(X,Y), {INS}{funct_repr}{REQUEST}(Z,Y), X!=Z{END}"
         rules.extend([r_del, r_inc])
 
     return rules
@@ -120,9 +120,9 @@ def build_updating_rules_for_inv_functs(inv_functs):
     Supplement for above function
     """
     rules = []
-    for repr in inv_functs:
-        r_update_ins = f"{UPDATING}(){RULE_SEPARATOR}{INS}{repr}{REQUEST}(X,Y){END}"
-        r_update_del = f"{UPDATING}(){RULE_SEPARATOR}{DEL}{repr}{REQUEST}(X,Y){END}"
+    for funct_repr in inv_functs:
+        r_update_ins = f"{UPDATING}(){RULE_SEPARATOR}{INS}{funct_repr}{REQUEST}(X,Y){END}"
+        r_update_del = f"{UPDATING}(){RULE_SEPARATOR}{DEL}{funct_repr}{REQUEST}(X,Y){END}"
         rules.extend([r_update_ins, r_update_del])
 
     return rules

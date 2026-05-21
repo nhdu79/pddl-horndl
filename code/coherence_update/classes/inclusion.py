@@ -1,6 +1,3 @@
-# from hashlib import md5
-import pprint
-
 from utils.functions import get_repr
 
 INCLUSION_TYPES_ORDER = [
@@ -40,7 +37,7 @@ class Inclusion:
         self._left_repr = get_repr(left_uri)
         self._right_repr = get_repr(right_uri)
 
-    def __dict__(self):
+    def to_dict(self):
         return {
             "uri": {
                 "left": self.left_uri,
@@ -57,11 +54,8 @@ class Inclusion:
             "incl_type": self.incl_type,
         }
 
-    def pprint(self):
-        pprint.pprint(self.__dict__())
-
     def __str__(self):
-        return f"{self.incl_type}: {self.left_pred.repr} {self.right_pred.repr}"
+        return f"{self.incl_type}: {self._left_repr} {self._right_repr}"
 
     def get_left_closure_repr(self):
         """

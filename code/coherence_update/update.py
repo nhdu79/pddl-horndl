@@ -1,14 +1,24 @@
 from collections import defaultdict
 
-from coherence_update.rules.atomic import *
-from coherence_update.rules.negative import *
-from coherence_update.rules.positive import *
+from coherence_update.rules.core.atomic import (
+    build_delete_rules_and_incompatible_update_for_functs,
+    build_delete_rules_and_incompatible_update_for_inv_functs,
+    build_insert_and_delete_rules_and_incompatible_update_for_atomic_concepts,
+    build_insert_and_delete_rules_and_incompatible_update_for_atomic_roles,
+    build_updating_rules_for_atomic_concepts,
+    build_updating_rules_for_atomic_roles,
+    build_updating_rules_for_functs,
+    build_updating_rules_for_inv_functs,
+)
+from coherence_update.rules.core.negative import NEG_INCL_METHOD_MAP, atomicA_closure, roleP_closure
+from coherence_update.rules.core.positive import POS_INCL_CLOSURE_METHOD_MAP, POS_INCL_METHOD_MAP
 from compilation.variant_options import UPDATING_PREDICATE_TYPES
 
 
-class CohrenceUpdate:
+class CoherenceUpdate:
+    @staticmethod
     def run(tbox, updating_pred_type):
-        update = CohrenceUpdate(tbox, updating_pred_type)
+        update = CoherenceUpdate(tbox, updating_pred_type)
         rules = []
         rules.extend(update.build_rules_for_atomic_concepts_and_roles())
         rules.extend(update.build_update_rules("positive"))
@@ -45,8 +55,9 @@ class CohrenceUpdate:
     def build_rules_for_atomic_concepts_and_roles(self):
         atomic_concepts = self.tbox.repr_of("a_concepts")
         atomic_roles = self.tbox.repr_of("roles")
-        functs, inv_functs = self.tbox.repr_of("functs"), self.tbox.repr_of(
-            "inv_functs"
+        functs, inv_functs = (
+            self.tbox.repr_of("functs"),
+            self.tbox.repr_of("inv_functs"),
         )
 
         r_concepts = (
@@ -73,13 +84,12 @@ class CohrenceUpdate:
 
     def build_update_rules(self, closure_type):
         rules = []
-        mapping = (
-            (closure_type == "positive" and POS_INCL_METHOD_MAP)
-            or (closure_type == "negative" and NEG_INCL_METHOD_MAP)
-            or None
-        )
-        if not mapping:
-            raise ValueError("Invalid closure type")
+        if closure_type == "positive":
+            mapping = POS_INCL_METHOD_MAP
+        elif closure_type == "negative":
+            mapping = NEG_INCL_METHOD_MAP
+        else:
+            raise ValueError(f"Invalid closure type: {closure_type!r}")
 
         for key, builder_method in mapping.items():
             inclusions = self.tbox.incl_dict[key]
@@ -156,7 +166,6 @@ class CohrenceUpdate:
                 left_repr = incl.get_left_closure_repr()
                 right_repr = incl.get_right_closure_repr()
                 if key in ["aAInaBSub", "ePInaBSub", "ePMinusInaBSub"]:
-                    # passed
                     closure_reprs = self._type1[left_repr]
                     rules.extend(builder_method(left_repr, right_repr, closure_reprs))
                 elif key in ["rInPSub", "rInPMinusSub"]:

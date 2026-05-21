@@ -1,9 +1,44 @@
 #!/usr/bin/env python
 
 import argparse
+
 from planning.domain import Domain
 from planning.problem import Problem
-from planning.logic import *
+from planning.logic import (
+    Action,
+    AddEffect,
+    And,
+    AssignEffect,
+    Assignment,
+    BinaryTemporalOperator,
+    Comparison,
+    ConjunctiveEffect,
+    ConditionalEffect,
+    DelEffect,
+    DerivedPredicate,
+    Exists,
+    Falsity,
+    FExpression,
+    Fact,
+    ForallEffect,
+    Forall,
+    Function,
+    LogicBaseClass,
+    Metric,
+    MinimalKnowledgeOperator,
+    Not,
+    Or,
+    Predicate,
+    Preference,
+    SimpleFExpression,
+    Substitution,
+    TemporalLogicBaseClass,
+    TokenList,
+    TraversableBaseClass,
+    Truth,
+    TypedList,
+    UnaryTemporalOperator,
+)
 from utils.functions import parse_name
 
 

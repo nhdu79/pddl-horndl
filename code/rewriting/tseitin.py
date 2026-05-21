@@ -13,14 +13,13 @@ dnh: Flattening structures of PDDL files for faster planning
 """
 
 class Tseitin:
-    def __init__(self,
-                 domain,
-                 problem):
+    def __init__(self, domain, problem, output_csv="results.csv"):
         self.domain = domain
         self.problem = problem
+        self.output_csv = output_csv
 
     def __call__(self):
-        with Timer("tseitin_transformation", file=args.output_csv):
+        with Timer("tseitin_transformation", file=self.output_csv):
             self._derived_predicates_count = 0
             self._merged_derived_predicates = []
             self._new_derived_predicates = []
@@ -223,27 +222,27 @@ class Tseitin:
             print("")
 
 if __name__ == "__main__":
-    p = argparse.ArgumentParser()
-    p.add_argument("domain")
-    p.add_argument("problem")
-    p.add_argument("--out-domain", "-d", default="domain.pddl")
-    p.add_argument("--out-problem", "-p", default="problem.pddl")
-    p.add_argument("--verbose", "-v", default=False, action='store_true')
-    p.add_argument("--keep-name", "-n", default=False, action='store_true')
-    p.add_argument("--output-csv", default="results.csv")
-    p.add_argument("--benchmark-name", default="test 1")
+    arg_parser = argparse.ArgumentParser()
+    arg_parser.add_argument("domain")
+    arg_parser.add_argument("problem")
+    arg_parser.add_argument("--out-domain", "-d", default="domain.pddl")
+    arg_parser.add_argument("--out-problem", "-p", default="problem.pddl")
+    arg_parser.add_argument("--verbose", "-v", default=False, action='store_true')
+    arg_parser.add_argument("--keep-name", "-n", default=False, action='store_true')
+    arg_parser.add_argument("--output-csv", default="results.csv")
+    arg_parser.add_argument("--benchmark-name", default="test 1")
 
-    args = p.parse_args()
+    args = arg_parser.parse_args()
     preserve_names = args.keep_name
     with open(args.domain) as f:
-        d = pddl.parse_domain(f.read(), preserve_predicate_names=preserve_names)
+        domain = pddl.parse_domain(f.read(), preserve_predicate_names=preserve_names)
     with open(args.problem) as f:
-        p = pddl.parse_problem(f.read())
-    tseitin = Tseitin(d, p)
+        problem = pddl.parse_problem(f.read())
+    tseitin = Tseitin(domain, problem, output_csv=args.output_csv)
     tseitin()
     with open(args.out_domain, "w") as f:
-        f.write(str(d))
+        f.write(str(domain))
     with open(args.out_problem, "w") as f:
-        f.write(str(p))
+        f.write(str(problem))
     if args.verbose:
         tseitin.print_information()
