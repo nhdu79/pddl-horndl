@@ -1,6 +1,21 @@
-from coherence_update.rules.symbols import DEL, INCOMPATIBLE_UPDATE, INS, UPDATING, COMPATIBLE_UPDATE
 import planning.datalog as datalog
 import planning.pddl as pddl
+from coherence_update.rules.symbols import (
+    A_OR_AP_CL,
+    ADEL,
+    AP_CL,
+    APLUS,
+    COMPATIBLE_UPDATE,
+    DEL,
+    DEL_CL,
+    INCOMPATIBLE_UPDATE,
+    INS,
+    INS_CL,
+    MIN_X_IN_TAU,
+    PRE_INS,
+    UPDATING,
+)
+from owl.expressions import EXISTENTIAL_PREFIX, INVERSE_PREFIX
 
 QUERY_PREDICATE_NAME = "QUERY"
 INCONSISTENCY_PREDICATE_NAME = "inconsistent"
@@ -16,7 +31,19 @@ def is_update_predicate_name(name):
 
 def is_coherence_update_predicate_name(name):
     return (
-        name.startswith(INS) or name.startswith(DEL) or is_update_predicate_name(name)
+        name.startswith(INS)
+        or name.startswith(DEL)
+        or name.startswith(APLUS)
+        or name.startswith(ADEL)
+        or name.startswith(A_OR_AP_CL)
+        or name.startswith(AP_CL)
+        or name.startswith(DEL_CL)
+        or name.startswith(MIN_X_IN_TAU)
+        or name.startswith(PRE_INS)
+        or name.startswith(INS_CL)
+        or name.startswith(EXISTENTIAL_PREFIX)
+        or name.startswith(INVERSE_PREFIX)
+        or is_update_predicate_name(name)
     )
 
 

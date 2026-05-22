@@ -61,9 +61,9 @@ python3 generate_pddl.py --all-fragments --all-variants --all-tasks
 python3 generate_pddl.py --help
 ```
 
-Available fragments: `core`, `horn`  
-Available variants: `original`, `var0`, `var1`, `var2`, `var3`  
-Available tasks: `blocks`, `catOG`, `elevator`, `robot`, `task`, `order`, `trip`, `tripv2`
+Available fragments: `core`, `horn`
+Available variants: `original`, `var0`, `var1`, `var2`, `var3`
+Available tasks: `blocks`, `catOG`, `elevator`, `robot`, `robotConj`, `task`, `order`, `trip`, `tripv2`
 
 #### Where are the written .pddl files?
 * Outputs are written to `benchmarks/outputs/[fragment]/[variant]/[task]/`

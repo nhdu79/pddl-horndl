@@ -1,0 +1,6 @@
+(define (problem blocksProb)
+(:domain Blocks)
+(:objects A D B C)
+(:INIT (ONBLOCK A D) (ONBLOCK B C))
+(:goal (AND (MKO (ON A B)) (MKO (ON B C))))
+)

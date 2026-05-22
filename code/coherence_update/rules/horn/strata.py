@@ -1,6 +1,8 @@
 from coherence_update.rules.symbols import (
     A_OR_AP_CL,
+    ADEL,
     AP_CL,
+    APLUS,
     DEL,
     DEL_CL,
     END,
@@ -10,8 +12,8 @@ from coherence_update.rules.symbols import (
     MIN_X_IN_TAU,
     NOT,
     PRE_INS,
-    REQUEST,
     RULE_SEPARATOR,
+    UPDATING,
     WORD_SEPARATOR,
 )
 from owl import OWL_NOTHING
@@ -53,8 +55,8 @@ def build_trigger_rules_for_propagation_concepts(concepts):
     rules = []
     for concept in concepts:
         r1 = f"{A_OR_AP_CL}{concept.id}(X){RULE_SEPARATOR}{concept.id}(X){END}"
-        r2 = f"{AP_CL}{concept.id}(X){RULE_SEPARATOR}{INS}{concept.id}{REQUEST}(X){END}"
-        r3 = f"{A_OR_AP_CL}{concept.id}(X){RULE_SEPARATOR}{INS}{concept.id}{REQUEST}(X){END}"
+        r2 = f"{AP_CL}{concept.id}(X){RULE_SEPARATOR}{APLUS}{concept.id}(X){END}"
+        r3 = f"{A_OR_AP_CL}{concept.id}(X){RULE_SEPARATOR}{APLUS}{concept.id}(X){END}"
         rules.extend([r1, r2, r3])
     return rules
 
@@ -71,8 +73,8 @@ def build_trigger_rules_for_propagation_roles(roles):
     rules = []
     for role in roles:
         r1 = f"{A_OR_AP_CL}{role.id}(X,Y){RULE_SEPARATOR}{role.id}(X,Y){END}"
-        r2 = f"{AP_CL}{role.id}(X,Y){RULE_SEPARATOR}{INS}{role.id}{REQUEST}(X,Y){END}"
-        r3 = f"{A_OR_AP_CL}{role.id}(X,Y){RULE_SEPARATOR}{INS}{role.id}{REQUEST}(X,Y){END}"
+        r2 = f"{AP_CL}{role.id}(X,Y){RULE_SEPARATOR}{APLUS}{role.id}(X,Y){END}"
+        r3 = f"{A_OR_AP_CL}{role.id}(X,Y){RULE_SEPARATOR}{APLUS}{role.id}(X,Y){END}"
         rules.extend([r1, r2, r3])
     return rules
 
@@ -146,7 +148,7 @@ def build_trigger_rules_for_deletion_concepts(concepts):
     """
     rules = []
     for concept in concepts:
-        r = f"{DEL_CL}{concept.id}(X){RULE_SEPARATOR}{DEL}{concept.id}{REQUEST}(X){END}"
+        r = f"{DEL_CL}{concept.id}(X){RULE_SEPARATOR}{ADEL}{concept.id}(X){END}"
         rules.append(r)
     return rules
 
@@ -160,7 +162,7 @@ def build_trigger_rules_for_deletion_roles(roles):
     """
     rules = []
     for role in roles:
-        r = f"{DEL_CL}{role.id}(X,Y){RULE_SEPARATOR}{DEL}{role.id}{REQUEST}(X,Y){END}"
+        r = f"{DEL_CL}{role.id}(X,Y){RULE_SEPARATOR}{ADEL}{role.id}(X,Y){END}"
         rules.append(r)
     return rules
 
@@ -191,8 +193,8 @@ def build_rules_for_functional_roles(functional_roles):
     """
     rules = []
     for f_role in functional_roles:
-        r8 = f"{DEL_CL}{f_role.id}(X,Z){RULE_SEPARATOR}{INS}{f_role.id}{REQUEST}(X,Y), {f_role.id}(X,Z), Y!=Z{END}"
-        r9 = f"{INCOMPATIBLE_UPDATE}(){RULE_SEPARATOR}{INS}{f_role.id}{REQUEST}(X,Y), {INS}{f_role.id}{REQUEST}(X,Z), Y!=Z{END}"
+        r8 = f"{DEL_CL}{f_role.id}(X,Z){RULE_SEPARATOR}{APLUS}{f_role.id}(X,Y), {f_role.id}(X,Z), Y!=Z{END}"
+        r9 = f"{INCOMPATIBLE_UPDATE}(){RULE_SEPARATOR}{APLUS}{f_role.id}(X,Y), {APLUS}{f_role.id}(X,Z), Y!=Z{END}"
         rules.extend([r8, r9])
     return rules
 
@@ -289,7 +291,7 @@ def build_incompatibility_rules_for_direct_deletion_concepts(concepts):
         concepts: list[ConceptExpression]
     """
     return [
-        f"{INCOMPATIBLE_UPDATE}(){RULE_SEPARATOR}{AP_CL}{concept.id}(X), {DEL}{concept.id}{REQUEST}(X){END}"
+        f"{INCOMPATIBLE_UPDATE}(){RULE_SEPARATOR}{AP_CL}{concept.id}(X), {ADEL}{concept.id}(X){END}"
         for concept in concepts
     ]
 
@@ -301,7 +303,7 @@ def build_incompatibility_rules_for_direct_deletion_roles(roles):
         roles: list[AtomicRole | InverseRole]
     """
     return [
-        f"{INCOMPATIBLE_UPDATE}(){RULE_SEPARATOR}{AP_CL}{role.id}(X,Y), {DEL}{role.id}{REQUEST}(X,Y){END}"
+        f"{INCOMPATIBLE_UPDATE}(){RULE_SEPARATOR}{AP_CL}{role.id}(X,Y), {ADEL}{role.id}(X,Y){END}"
         for role in roles
     ]
 
@@ -425,7 +427,7 @@ def build_actual_insertion_rules_for_concepts(concepts):
     rules = []
     for concept in concepts:
         r21 = f"{INS}{concept.id}(X){RULE_SEPARATOR}{NOT}{concept.id}(X), {INS_CL}{concept.id}(X){END}"
-        r22 = f"{INS}{concept.id}(X){RULE_SEPARATOR}{NOT}{concept.id}(X), {INS}{concept.id}{REQUEST}(X){END}"
+        r22 = f"{INS}{concept.id}(X){RULE_SEPARATOR}{NOT}{concept.id}(X), {APLUS}{concept.id}(X){END}"
         rules.extend([r21, r22])
     return rules
 
@@ -440,6 +442,41 @@ def build_actual_insertion_rules_for_roles(roles):
     rules = []
     for role in roles:
         r21 = f"{INS}{role.id}(X,Y){RULE_SEPARATOR}{NOT}{role.id}(X,Y), {INS_CL}{role.id}(X,Y){END}"
-        r22 = f"{INS}{role.id}(X,Y){RULE_SEPARATOR}{NOT}{role.id}(X,Y), {INS}{role.id}{REQUEST}(X,Y){END}"
+        r22 = f"{INS}{role.id}(X,Y){RULE_SEPARATOR}{NOT}{role.id}(X,Y), {APLUS}{role.id}(X,Y){END}"
         rules.extend([r21, r22])
+    return rules
+
+
+# ---------------------------------------------------------------------------
+# Updating trigger rules
+# ---------------------------------------------------------------------------
+
+
+def build_updating_rules_for_concepts(concepts):
+    """
+    updating() ← Ap_X(X)
+    updating() ← Am_X(X)
+    Covers all positive concepts: atomic, existential, and inverse-existential.
+    param:
+        concepts: list[ConceptExpression]
+    """
+    rules = []
+    for concept in concepts:
+        rules.append(f"{UPDATING}(){RULE_SEPARATOR}{APLUS}{concept.id}(X){END}")
+        rules.append(f"{UPDATING}(){RULE_SEPARATOR}{ADEL}{concept.id}(X){END}")
+    return rules
+
+
+def build_updating_rules_for_roles(roles):
+    """
+    updating() ← Ap_R(X,Y)
+    updating() ← Am_R(X,Y)
+    Covers all positive roles: atomic and inverse.
+    param:
+        roles: list[AtomicRole | InverseRole]
+    """
+    rules = []
+    for role in roles:
+        rules.append(f"{UPDATING}(){RULE_SEPARATOR}{APLUS}{role.id}(X,Y){END}")
+        rules.append(f"{UPDATING}(){RULE_SEPARATOR}{ADEL}{role.id}(X,Y){END}")
     return rules

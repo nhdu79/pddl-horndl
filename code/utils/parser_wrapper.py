@@ -20,14 +20,14 @@ def validate_pddl(domain: str, problem: str, parser_path: str = DEFAULT_PARSER_P
     ]
 
     timestamp = subprocess.check_output("date", shell=True).decode().strip()
-    print("\n\033[93m =============================== PARSER OUTPUT ====================================\033[0m")
+    # print("\n\033[93m =============================== PARSER OUTPUT ====================================\033[0m")
     print(f"File: {domain} and {problem}")
     if errors:
         for error in errors:
             print("\033[91m" + error + "\033[0m")
     else:
         print("\033[92mNo errors found!\033[0m")
-    print("\033[93m =============================== END OF OUTPUT ====================================\033[0m")
+    # print("\033[93m =============================== END OF OUTPUT ====================================\033[0m")
 
     with open(f"{LOG_FOLDER}/parser_output.log", "a") as f:
         f.write(f"{timestamp}\n")

@@ -12,3 +12,4 @@ logs/
 # ignore venv
 .venv/
 result.csv
+*.sas

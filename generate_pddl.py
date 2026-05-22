@@ -75,7 +75,7 @@ RLS = "code/nemo/t_closure.rls"
 
 ALL_FRAGMENTS = ["core", "horn"]
 ALL_VARIANTS = ["original", "var0", "var1", "var2", "var3"]
-ALL_TASKS = ["blocks", "catOG", "elevator", "robot", "task", "order", "trip", "tripv2"]
+ALL_TASKS = ["blocks", "catOG", "elevator", "robot", "robotConj", "task", "order", "trip", "tripv2"]
 
 
 @dataclass(frozen=True)
@@ -96,6 +96,7 @@ TASK_ELEMENTS: dict[str, list[str]] = {
     "catOG": [str(i) for i in range(6, 26)],
     "elevator": [str(i) for i in range(15, 35)],
     "robot": [str(i) for i in range(3, 23)],
+    "robotConj": [str(i) for i in range(3, 23)],
     "task": [str(i) for i in range(3, 23)],
     "blocks": [ "-6-2", "-10-2", "-16-1", "-13-1", "-11-0", "-7-2", "-9-0", "-5-0", "-8-0", "-7-1", "-17-0", "-14-0", "-6-0", "-16-2", "-5-1", "-15-0", "-8-1", "-14-1", "-6-1", "-5-2", "-10-1", "-15-1", "-11-1", "-4-1", "-7-0", "-8-2", "-4-2", "-12-0", "-13-0", "-4-0", "-12-1", "-10-0", "-11-2", "-9-2", "-9-1"],
     # order, trip, tripv2 share the same element list:
@@ -112,14 +113,14 @@ TASK_ELEMENTS: dict[str, list[str]] = {
 
 def owl_path(task: str, element: str) -> str:
     prefix = f"benchmarks/inputs/{task}"
-    if task == "robot":
+    if task == "robot" or task == "robotConj":
         return f"{prefix}/TTL{element}.owl"
     return f"{prefix}/TTL.owl" if task != "blocks" else f"{prefix}/blocks.owl"
 
 
 def domain_path(task: str, element: str) -> str:
     prefix = f"benchmarks/inputs/{task}"
-    if task == "robot":
+    if task == "robot" or task == "robotConj":
         return f"{prefix}/robotDomain{element}.pddl"
     return f"{prefix}/domain.pddl"
 
@@ -128,6 +129,8 @@ def problem_path(task: str, element: str) -> str:
     prefix = f"benchmarks/inputs/{task}"
     if task == "blocks":
         return f"{prefix}/probBLOCKS{element}.pddl"
+    elif task == "robotConj":
+        return f"{prefix}/robotProblem{element}.pddl"
     return f"{prefix}/{task}Problem{element}.pddl"
 
 

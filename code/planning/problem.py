@@ -1,6 +1,7 @@
 from coherence_update.rules.symbols import UPDATING
 from planning.logic import And, Fact, Not
 
+
 class Problem:
     def __init__(self):
         self.name = None
@@ -12,7 +13,7 @@ class Problem:
         self.metric = None
 
     def __str__(self):
-        res = [ "(define (problem %s)" % self.name ]
+        res = ["(define (problem %s)" % self.name]
         res.append("(:domain %s)" % self.domain)
         if self.objects != None:
             res.append("(:objects")
@@ -31,7 +32,7 @@ class Problem:
         return "\n".join(res)
 
     def get_type_to_object_map(self, type_relation):
-        objects = { t: list() for t in type_relation.keys() }
+        objects = {t: list() for t in type_relation.keys()}
         if self.objects != None:
             for tl in self.objects:
                 for super_type in type_relation.get(tl.type, []):

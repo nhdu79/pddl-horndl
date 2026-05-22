@@ -7,6 +7,23 @@ from abc import ABC, abstractmethod
 
 from coherence_update.classes.inclusion import INCLUSION_TYPES_ORDER
 from coherence_update.classes.tbox import TBox
+from coherence_update.rules.horn.strata import (
+    build_actual_deletion_rules_for_concepts,
+    build_actual_deletion_rules_for_roles,
+    build_actual_insertion_rules_for_concepts,
+    build_actual_insertion_rules_for_roles,
+    build_connective_rules_for_propagation_role,
+    build_connnective_rules_for_deletion_role,
+    build_incompatibility_rules_for_direct_deletion_concepts,
+    build_incompatibility_rules_for_direct_deletion_roles,
+    build_insertion_closure_rule_for_existential,
+    build_trigger_rules_for_deletion_concepts,
+    build_trigger_rules_for_deletion_roles,
+    build_trigger_rules_for_propagation_concepts,
+    build_trigger_rules_for_propagation_roles,
+    build_updating_rules_for_concepts,
+    build_updating_rules_for_roles,
+)
 from coherence_update.rules.core.atomic import (
     build_insert_and_delete_rules_and_incompatible_update_for_atomic_concepts,
     build_insert_and_delete_rules_and_incompatible_update_for_atomic_roles,
@@ -21,7 +38,20 @@ from compilation.variant_options import (
     INCOMPATIBLE_UPDATE_PREDICATE_TYPES,
     UPDATING_PREDICATE_TYPES,
 )
-from owl import FunctionalRole, InverseFunctionalRole, parse_owl, saturate_role_inclusions, normalize_negative_concept_inclusions
+from owl import (
+    AtomicConcept,
+    AtomicRole,
+    ExistentialConcept,
+    FunctionalRole,
+    InverseExistentialConcept,
+    InverseFunctionalRole,
+    InverseRole,
+    OWL_NOTHING,
+    OWL_THING,
+    normalize_negative_concept_inclusions,
+    parse_owl,
+    saturate_role_inclusions,
+)
 from planning.datalog import Equality, Negated
 from planning.logic import (
     And,
@@ -141,6 +171,14 @@ class UpdateRunner(ABC):
     def atomic_predicates(self) -> set:
         """Normalised names of all atomic predicates seen in the ontology."""
 
+    @abstractmethod
+    def predicates_for_domain(self, pddl_predicates: list) -> list:
+        """
+        Returns the unified list of Predicate objects that should have
+        ins/del/request/closure machinery registered in the domain:
+            pddl_predicates ∪ (ontology predicates not already in pddl_predicates)
+        """
+
 
 class CoreUpdateRunner(UpdateRunner):
     """DL-Lite Core: TBox computed via Nemo + t_closure.rls."""
@@ -206,6 +244,9 @@ class CoreUpdateRunner(UpdateRunner):
         atomic = self.a_atomics + self.roles + self.functs + self.inv_functs
         return {get_repr(uri) for uri in atomic}
 
+    def predicates_for_domain(self, pddl_predicates):
+        return list(pddl_predicates)
+
     def _compute_t_closure(self):
         if os.path.exists(TMP_DIR):
             shutil.rmtree(TMP_DIR)
@@ -266,13 +307,40 @@ class HornUpdateRunner(UpdateRunner):
         return rules
 
     def run_for_missing_predicates(self, missing_concepts, missing_roles):
-        """
-        param:
-            missing_concepts: str[]
-            missing_roles: str[]
-        """
-        # TODO(dnh): implement Horn-specific rules for missing predicates
-        return []
+        # Wrap plain names as expression objects so the strata functions can use them.
+        atomic_role_objs = [AtomicRole(name) for name in missing_roles]
+        inv_role_objs = [InverseRole(r) for r in atomic_role_objs]
+        all_role_objs = atomic_role_objs + inv_role_objs
+
+        concept_objs = [AtomicConcept(name) for name in missing_concepts]
+        ex_concept_objs = [ExistentialConcept(r) for r in atomic_role_objs]
+        inv_ex_concept_objs = [InverseExistentialConcept(r) for r in atomic_role_objs]
+        all_concept_objs = concept_objs + ex_concept_objs + inv_ex_concept_objs
+
+        rules = []
+        # Stratum 1 — trigger propagation (rules 1-3; rule 4 skipped: no TBox)
+        rules.extend(build_trigger_rules_for_propagation_concepts(all_concept_objs))
+        rules.extend(build_trigger_rules_for_propagation_roles(all_role_objs))
+        for role in all_role_objs:
+            rules.extend(build_connective_rules_for_propagation_role(role))
+        # Stratum 2 — deletion closure (rules 5-7, 16-17; rules 8-15 skipped: no TBox)
+        rules.extend(build_trigger_rules_for_deletion_concepts(all_concept_objs))
+        rules.extend(build_trigger_rules_for_deletion_roles(all_role_objs))
+        for role in all_role_objs:
+            rules.extend(build_connnective_rules_for_deletion_role(role))
+        rules.extend(build_incompatibility_rules_for_direct_deletion_concepts(all_concept_objs))
+        rules.extend(build_incompatibility_rules_for_direct_deletion_roles(all_role_objs))
+        rules.extend(build_actual_deletion_rules_for_concepts(all_concept_objs))
+        rules.extend(build_actual_deletion_rules_for_roles(all_role_objs))
+        # Stratum 3 — insertion closure (rules 20-22; rules 18-19 skipped: no TBox)
+        for role in all_role_objs:
+            rules.extend(build_insertion_closure_rule_for_existential(role))
+        rules.extend(build_actual_insertion_rules_for_concepts(all_concept_objs))
+        rules.extend(build_actual_insertion_rules_for_roles(all_role_objs))
+        # Updating trigger
+        rules.extend(build_updating_rules_for_concepts(all_concept_objs))
+        rules.extend(build_updating_rules_for_roles(all_role_objs))
+        return rules
 
     def atomic_predicates(self) -> set:
         concepts = set(self.ontology.atomic_concepts.keys())
@@ -288,6 +356,17 @@ class HornUpdateRunner(UpdateRunner):
             if isinstance(ax, InverseFunctionalRole)
         }
         return concepts | roles | functs | inv_functs
+
+    def predicates_for_domain(self, pddl_predicates):
+        pddl_names = {p.name for p in pddl_predicates}
+        extra = []
+        for c in self.ontology.atomic_concepts.values():
+            if c not in (OWL_THING, OWL_NOTHING) and c.id not in pddl_names:
+                extra.append(Predicate(c.id, [TypedList(["?x0"])]))
+        for r in self.ontology.atomic_roles.values():
+            if r.id not in pddl_names:
+                extra.append(Predicate(r.id, [TypedList(["?x0", "?x1"])]))
+        return list(pddl_predicates) + extra
 
 
 def make_update_runner(

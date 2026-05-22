@@ -26,7 +26,7 @@ from compilation.variant_options import (
     UPDATING_PREDICATE_TYPES,
 )
 from rewriting.clipper import Clipper
-from update_runner import Timer, make_update_runner, transform_incompatible_update
+from update_runner import HornUpdateRunner, Timer, make_update_runner, transform_incompatible_update
 from utils.functions import parse_name
 
 
@@ -190,10 +190,14 @@ class Compiler:
     # -------------------------------------------------------------------------
 
     def _extend_for_coherence_update(self):
-        self.domain.adjust_actions(self.update_runner.updating_pred_type)
+        is_horn = isinstance(self.update_runner, HornUpdateRunner)
+        self.domain.adjust_actions(self.update_runner.updating_pred_type, horn=is_horn)
+        all_predicates = self.update_runner.predicates_for_domain(self.domain.predicates)
         self.domain.construct_update_action(
             self.update_runner.updating_pred_type,
             self.update_runner.incompatible_update_pred_type,
+            horn=is_horn,
+            predicates=all_predicates,
         )
         self.problem.extend_for_coherence_update()
 

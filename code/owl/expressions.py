@@ -23,6 +23,17 @@ from rdflib.namespace import OWL
 
 from utils.functions import parse_name
 
+# ---------------------------------------------------------------------------
+# Naming constants — used to build compound expression IDs and importable
+# by any module that needs to construct or recognise those names.
+# ---------------------------------------------------------------------------
+
+EXISTENTIAL_PREFIX = "exists_"
+INVERSE_EXISTENTIAL_PREFIX = "exists_inv_"
+INVERSE_PREFIX = "inv_"
+NOT_PREFIX = "not_"
+AND_SEP = "_and_"
+
 
 def _local_name(iri: str) -> str:
     """Return the normalised local name of an IRI.
@@ -61,7 +72,7 @@ class ExistentialConcept:
 
     @property
     def id(self) -> str:
-        return f"exists_{self.role.id}"
+        return f"{EXISTENTIAL_PREFIX}{self.role.id}"
 
     def __str__(self) -> str:
         return self.id
@@ -74,7 +85,7 @@ class InverseExistentialConcept:
 
     @property
     def id(self) -> str:
-        return f"exists_inv_{self.role.id}"
+        return f"{INVERSE_EXISTENTIAL_PREFIX}{self.role.id}"
 
     def __str__(self) -> str:
         return self.id
@@ -87,7 +98,7 @@ class NegatedConcept:
 
     @property
     def id(self) -> str:
-        return f"not_{self.concept.id}"
+        return f"{NOT_PREFIX}{self.concept.id}"
 
     def __str__(self) -> str:
         return self.id
@@ -100,7 +111,7 @@ class IntersectionConcept:
 
     @property
     def id(self) -> str:
-        return "_and_".join(o.id for o in self.operands)
+        return AND_SEP.join(o.id for o in self.operands)
 
     def __str__(self) -> str:
         return self.id
@@ -142,7 +153,7 @@ class InverseRole:
 
     @property
     def id(self) -> str:
-        return f"inv_{self.role.id}"
+        return f"{INVERSE_PREFIX}{self.role.id}"
 
     def __str__(self) -> str:
         return self.id
@@ -155,7 +166,7 @@ class NegatedRole:
 
     @property
     def id(self) -> str:
-        return f"not_{self.role.id}"
+        return f"{NOT_PREFIX}{self.role.id}"
 
     def __str__(self) -> str:
         return self.id

@@ -25,6 +25,8 @@ from coherence_update.rules.horn.strata import (
     build_trigger_rules_for_deletion_roles,
     build_trigger_rules_for_propagation_concepts,
     build_trigger_rules_for_propagation_roles,
+    build_updating_rules_for_concepts,
+    build_updating_rules_for_roles,
 )
 from owl import (
     OWL_NOTHING,
@@ -212,5 +214,10 @@ def build_rules_for_pus(on: Ontology) -> list[str]:
     # Rules 21-22: ins_X(Ȳ) ← ¬X(Ȳ) ∧ insCl_X(Ȳ) / ← ¬X(Ȳ) ∧ Ap_X(Ȳ)
     rules.extend(build_actual_insertion_rules_for_concepts(concepts))
     rules.extend(build_actual_insertion_rules_for_roles(roles))
+
+    # Updating trigger: updating() ← Ap_X(Ȳ) / Am_X(Ȳ)
+    # All positive concepts and roles, not just atomics.
+    rules.extend(build_updating_rules_for_concepts(concepts))
+    rules.extend(build_updating_rules_for_roles(roles))
 
     return rules

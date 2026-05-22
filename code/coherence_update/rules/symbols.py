@@ -18,3 +18,5 @@ DEL_CL = "DelCl" + WORD_SEPARATOR
 MIN_X_IN_TAU = "Min" + WORD_SEPARATOR
 PRE_INS = "PreInsCl" + WORD_SEPARATOR
 INS_CL = "InsCl" + WORD_SEPARATOR
+APLUS = "Ap" + WORD_SEPARATOR # equivalent to ins_X_request
+ADEL = "Am" + WORD_SEPARATOR # equivalent to del_X_request
