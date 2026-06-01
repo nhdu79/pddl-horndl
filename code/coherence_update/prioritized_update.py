@@ -78,7 +78,7 @@ def _is_valid_ontology_for_pus(on: Ontology) -> bool:
     return True
 
 
-def build_rules_for_pus(on: Ontology) -> list[str]:
+def build_rules_for_pus(on: Ontology, include_updating_rules: bool = True) -> list[str]:
     """
     Build the complete stratified Datalog⁻ program R_T (22 rules across 3 strata)
     for Horn DL-Lite prioritized ABox update.
@@ -86,6 +86,10 @@ def build_rules_for_pus(on: Ontology) -> list[str]:
     The ontology must already be saturated via saturate_role_inclusions()
     and normalize_negative_concept_inclusions before calling this function
     so that T* is fully reflected in on.axioms.
+
+    include_updating_rules: when False the updating-trigger rules (rules 21-22 in the
+        updating-trigger block) are omitted.  Pass False when updating() is managed
+        as an action effect instead of a derived predicate.
     """
     if not _is_valid_ontology_for_pus(on):
         raise ValueError(
@@ -217,7 +221,9 @@ def build_rules_for_pus(on: Ontology) -> list[str]:
 
     # Updating trigger: updating() ← Ap_X(Ȳ) / Am_X(Ȳ)
     # All positive concepts and roles, not just atomics.
-    rules.extend(build_updating_rules_for_concepts(concepts))
-    rules.extend(build_updating_rules_for_roles(roles))
+    # Omitted when updating() is managed as an action effect (action_effect variant).
+    if include_updating_rules:
+        rules.extend(build_updating_rules_for_concepts(concepts))
+        rules.extend(build_updating_rules_for_roles(roles))
 
     return rules

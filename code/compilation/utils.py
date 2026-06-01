@@ -46,6 +46,8 @@ def is_coherence_update_predicate_name(name):
         or is_update_predicate_name(name)
     )
 
+def is_non_horn_aux_predicate_name(name):
+    return name.startswith("nonHornAux") or name.startswith("nonhornaux")
 
 def prime_predicate_name(original):
     return "DATALOG_%s" % original.upper()

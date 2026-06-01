@@ -13,3 +13,4 @@ logs/
 .venv/
 result.csv
 *.sas
+generated/

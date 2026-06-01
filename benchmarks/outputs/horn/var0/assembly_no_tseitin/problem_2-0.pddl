@@ -1,0 +1,11 @@
+(define (problem ASSEMBLY-2-0)
+(:domain assembly)
+(:init
+       (screen screen_1)
+       (battery battery_1)
+       (processor board_1)
+       (screen screen_2)
+       (battery battery_2)
+       (processor board_2))
+(:goal (and (DATALOG_FULLYEQUIPPED phone_1) (DATALOG_FULLYEQUIPPED phone_2) (not (updating))))
+)

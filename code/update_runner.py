@@ -299,12 +299,10 @@ class HornUpdateRunner(UpdateRunner):
         normalize_negative_concept_inclusions(self.ontology)
 
     def run(self):
-        rules = build_rules_for_pus(self.ontology)
-        # TODO(dnh): Support different updating_pred_type options
-        # if self.updating_pred_type == UPDATING_PREDICATE_TYPES["derived_predicate"]:
-        #     rules, compatible_update = transform_incompatible_update(rules)
-        #     rules.append(compatible_update)
-        return rules
+        include_updating = (
+            self.updating_pred_type == UPDATING_PREDICATE_TYPES["derived_predicate"]
+        )
+        return build_rules_for_pus(self.ontology, include_updating_rules=include_updating)
 
     def run_for_missing_predicates(self, missing_concepts, missing_roles):
         # Wrap plain names as expression objects so the strata functions can use them.
@@ -337,9 +335,10 @@ class HornUpdateRunner(UpdateRunner):
             rules.extend(build_insertion_closure_rule_for_existential(role))
         rules.extend(build_actual_insertion_rules_for_concepts(all_concept_objs))
         rules.extend(build_actual_insertion_rules_for_roles(all_role_objs))
-        # Updating trigger
-        rules.extend(build_updating_rules_for_concepts(all_concept_objs))
-        rules.extend(build_updating_rules_for_roles(all_role_objs))
+        # Updating trigger — only when updating() is a derived predicate
+        if self.updating_pred_type == UPDATING_PREDICATE_TYPES["derived_predicate"]:
+            rules.extend(build_updating_rules_for_concepts(all_concept_objs))
+            rules.extend(build_updating_rules_for_roles(all_role_objs))
         return rules
 
     def atomic_predicates(self) -> set:

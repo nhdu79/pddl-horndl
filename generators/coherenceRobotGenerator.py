@@ -1,443 +1,338 @@
-#!/bin/python3
+#!/usr/bin/env python3
+"""Generator for the robot benchmark (core DL-Lite fragment).
+
+Grid semantics (0-indexed, origin at bottom-left):
+  RightOf_i   — robot is in column ≥ i          (more specific ⊆ less specific)
+  LeftOf_i    — robot is in column < i           (more specific ⊆ less specific)
+  Column_i    — robot is in exactly column i
+  AboveOf_i   — robot is in row ≥ i
+  BelowOf_i   — robot is in row < i
+  Row_i       — robot is in exactly row i
+
+For an n×n grid this produces:
+  TTL<n>.owl            — OWL ontology
+  robotDomain<n>.pddl   — PDDL planning domain
+  robotProblem<n>.pddl  — PDDL planning problem
+"""
+
+import os
+
+BASE_URL = "http://www.semanticweb.org/alisa/ontologies/2021/3/"
+PAD = " " * 58  # fixed continuation indent for Turtle property lines
+
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+DEFAULT_OUT_DIR = os.path.join(
+    SCRIPT_DIR, "..", "benchmarks", "inputs", "core", "robot"
+)
 
 
-def generate_planning_domain(columns, rows, filename, onto):
-    print("Ontology \n")
-    ontology = """
-    @prefix : <http://www.semanticweb.org/alisa/ontologies/2021/3/robot> .
-@prefix owl: <http://www.w3.org/2002/07/owl#> .
-@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
-@prefix xml: <http://www.w3.org/XML/1998/namespace> .
-@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
-@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
-@base <http://www.semanticweb.org/alisa/ontologies/2021/3/robot> .\n
-    """
-    ontology += "\n<http://www.semanticweb.org/alisa/ontologies/2021/3/robot> rdf:type owl:Ontology .\n\n ################################################################# \n #    Classes\n ################################################################# \n \n"
-    for column in range(columns):
-        # planning_domain += "\t\t(isA RightOf"+str(column+1)+" RightOf"+str(column)+")\n"
-        ontology += (
-            "###  http://www.semanticweb.org/alisa/ontologies/2021/3/Column"
-            + str(column)
-            + "\n <http://www.semanticweb.org/alisa/ontologies/2021/3/Column"
-            + str(column)
-            + "> rdf:type owl:Class ;\n                                                          rdfs:subClassOf <http://www.semanticweb.org/alisa/ontologies/2021/3/Column"
-            + str(column)
-            + "> .\n\n\n"
-        )
-    for row in range(rows):
-        # planning_domain += "\t\t(isA RightOf"+str(column+1)+" RightOf"+str(column)+")\n"
-        ontology += (
-            "###  http://www.semanticweb.org/alisa/ontologies/2021/3/Row"
-            + str(row)
-            + "\n <http://www.semanticweb.org/alisa/ontologies/2021/3/Row"
-            + str(row)
-            + "> rdf:type owl:Class ;\n                                                          rdfs:subClassOf <http://www.semanticweb.org/alisa/ontologies/2021/3/Row"
-            + str(row)
-            + "> .\n\n\n"
-        )
-
-    # planning_domain += "\t\t(isA RightOf0 Columns)\n"
-    ontology += "###  http://www.semanticweb.org/alisa/ontologies/2021/3/RightOf0 \n <http://www.semanticweb.org/alisa/ontologies/2021/3/RightOf0> rdf:type owl:Class ;\n                                                          rdfs:subClassOf <http://www.semanticweb.org/alisa/ontologies/2021/3/Columns> .\n\n\n"
-    for column in range(columns - 1):
-        # planning_domain += "\t\t(isA RightOf"+str(column+1)+" RightOf"+str(column)+")\n"
-        ontology += (
-            "###  http://www.semanticweb.org/alisa/ontologies/2021/3/RightOf"
-            + str(column + 1)
-            + "\n <http://www.semanticweb.org/alisa/ontologies/2021/3/RightOf"
-            + str(column + 1)
-            + "> rdf:type owl:Class ;\n                                                          rdfs:subClassOf <http://www.semanticweb.org/alisa/ontologies/2021/3/RightOf"
-            + str(column)
-            + "> ;\n                                                          owl:disjointWith <http://www.semanticweb.org/alisa/ontologies/2021/3/LeftOf"
-            + str(column + 1)
-            + "> .\n\n\n"
-        )
-
-    # planning_domain += "\t\t(isA LeftOf"+str(columns)+" Columns)\n"
-    ontology += (
-        "###  http://www.semanticweb.org/alisa/ontologies/2021/3/LeftOf"
-        + str(columns)
-        + " \n <http://www.semanticweb.org/alisa/ontologies/2021/3/LeftOf"
-        + str(columns)
-        + "> rdf:type owl:Class ;\n                                                          rdfs:subClassOf <http://www.semanticweb.org/alisa/ontologies/2021/3/Columns> .\n\n\n"
-    )
-    for column in range(columns - 1):
-        # planning_domain += "\t\t(isA LeftOf"+str(columns-column-1)+" LeftOf"+str(columns-column)+")\n"
-        ontology += (
-            "###  http://www.semanticweb.org/alisa/ontologies/2021/3/LeftOf"
-            + str(columns - column - 1)
-            + "\n <http://www.semanticweb.org/alisa/ontologies/2021/3/LeftOf"
-            + str(columns - column - 1)
-            + "> rdf:type owl:Class ;\n                                                          rdfs:subClassOf <http://www.semanticweb.org/alisa/ontologies/2021/3/LeftOf"
-            + str(columns - column)
-            + "> .\n\n\n"
-        )
-
-    # planning_domain += "\t\t(isA AboveOf0 Rows)\n"
-    ontology += "###  http://www.semanticweb.org/alisa/ontologies/2021/3/AboveOf0 \n <http://www.semanticweb.org/alisa/ontologies/2021/3/AboveOf0> rdf:type owl:Class ;\n                                                          rdfs:subClassOf <http://www.semanticweb.org/alisa/ontologies/2021/3/Rows> .\n\n\n"
-    for row in range(rows - 1):
-        # planning_domain += "\t\t(isA AboveOf"+str(row+1)+" AboveOf"+str(row)+")\n"
-        ontology += (
-            "###  http://www.semanticweb.org/alisa/ontologies/2021/3/AboveOf"
-            + str(row + 1)
-            + "\n <http://www.semanticweb.org/alisa/ontologies/2021/3/AboveOf"
-            + str(row + 1)
-            + "> rdf:type owl:Class ;\n                                                          rdfs:subClassOf <http://www.semanticweb.org/alisa/ontologies/2021/3/AboveOf"
-            + str(row)
-            + "> ;\n                                                          owl:disjointWith <http://www.semanticweb.org/alisa/ontologies/2021/3/BelowOf"
-            + str(row + 1)
-            + "> .\n\n\n"
-        )
-
-    # planning_domain += "\t\t(isA BelowOf"+str(rows)+" Rows)\n"
-    ontology += (
-        "###  http://www.semanticweb.org/alisa/ontologies/2021/3/BelowOf"
-        + str(rows)
-        + " \n <http://www.semanticweb.org/alisa/ontologies/2021/3/BelowOf"
-        + str(rows)
-        + "> rdf:type owl:Class ;\n                                                          rdfs:subClassOf <http://www.semanticweb.org/alisa/ontologies/2021/3/Rows> .\n\n\n"
-    )
-    for row in range(rows - 1):
-        # planning_domain += "\t\t(isA BelowOf"+str(rows-row-1)+" BelowOf"+str(rows-row)+")\n"
-        ontology += (
-            "###  http://www.semanticweb.org/alisa/ontologies/2021/3/BelowOf"
-            + str(rows - row - 1)
-            + "\n <http://www.semanticweb.org/alisa/ontologies/2021/3/BelowOf"
-            + str(rows - row - 1)
-            + "> rdf:type owl:Class ;\n                                                          rdfs:subClassOf <http://www.semanticweb.org/alisa/ontologies/2021/3/BelowOf"
-            + str(rows - row)
-            + "> .\n\n\n"
-        )
-
-    # for column in range(1,columns):
-    # 	planning_domain += "\t\t(isA LeftOf"+str(column)+" (not RightOf"+str(column)+"))\n"
-    # for row in range(1,rows):
-    # 	planning_domain += "\t\t(isA AboveOf"+str(row)+" (not BelowOf"+str(row)+"))\n"
-
-    # ~ Chiudo la parentesi di axioms
-    ontology += "###  Generated by the OWL API (version 4.5.9.2019-02-01T07:24:44Z) https://github.com/owlcs/owlapi\n"
-
-    output_file = open(onto, "w")
-    output_file.write(ontology)
-    output_file.close()
-
-    print("Inizio la generazione del planning domain.\n")
-
-    # ~ Inizializzo il dominio di planning
-    planning_domain = """(define (domain robot)\n"""
-
-    # ~ Genero i predicati per ogni colonna e riga
-    planning_domain += "\t(:predicates\n"
-    planning_domain += "\t\t(Columns ?x)\n"
-    planning_domain += "\t\t(Rows ?x)\n"
-
-    for column in range(columns):
-        planning_domain += "\t\t(Column" + str(column) + " ?x)\n"
-    for column in range(columns):
-        planning_domain += "\t\t(RightOf" + str(column) + " ?x)\n"
-    for column in range(columns):
-        planning_domain += "\t\t(LeftOf" + str(column + 1) + " ?x)\n"
-
-    for row in range(rows):
-        planning_domain += "\t\t(Row" + str(row) + " ?x)\n"
-    for row in range(rows):
-        planning_domain += "\t\t(AboveOf" + str(row) + " ?x)\n"
-    for row in range(rows):
-        planning_domain += "\t\t(BelowOf" + str(row + 1) + " ?x)\n"
-
-    # ~ Chiudo la parentesi di predicates
-    planning_domain += "\t)\n"
-
-    # ~ Creo il file e gli scrivo dentro planning_domain
-    output_file = open(filename, "w")
-    output_file.write(planning_domain)
-    output_file.close()
-
-    planning_domain = ""
-    print("Finito la sezione :predicates\n")
-
-    # ~ Genero le azioni
-    # ~ Genero moveRight
-    planning_domain += "\t(:action moveRight\n"
-    planning_domain += "\t\t:parameters (?x)\n"
-    planning_domain += "\t\t:precondition (and (mko (Columns ?x)))\n"
-    planning_domain += "\t\t:effect "
-
-    planning_domain += "(and \n"
-    for column in range(columns - 1):
-        planning_domain += "\t\t\t(when (mko (RightOf" + str(column) + " ?x))\n"
-        planning_domain += "\t\t\t\t(and (RightOf" + str(column + 1) + " ?x))\n"
-        planning_domain += "\t\t\t\t)\n"
-
-    for column in range(1, columns):
-        # planning_domain += "\t\t\n"
-        if column != 1:
-            planning_domain += (
-                "\t\t\t(when (and (mko (LeftOf"
-                + str(column)
-                + " ?x)) (not (LeftOf"
-                + str(column - 1)
-                + " ?x)))\n"
-            )
-        else:
-            planning_domain += "\t\t\t(when (mko (LeftOf" + str(column) + " ?x))\n"
-        planning_domain += "\t\t\t\t(and (LeftOf" + str(column + 1) + " ?x)\n"
-        planning_domain += "\t\t\t\t(not (LeftOf" + str(column) + " ?x)))\n"
-        planning_domain += "\t\t\t\t)\n"
-
-    for column in range(columns - 1):
-        # planning_domain += "\t\t\n"
-        planning_domain += "\t\t\t(when (mko (Column" + str(column) + " ?x))\n"
-        planning_domain += "\t\t\t\t(and (Column" + str(column + 1) + " ?x)\n"
-        planning_domain += "\t\t\t\t(not (Column" + str(column) + " ?x)))\n"
-        planning_domain += "\t\t\t\t)\n"
-
-    for column in range(columns - 1):
-        # planning_domain += "\t\t\n"
-        planning_domain += (
-            "\t\t\t(when (mko (and (RightOf"
-            + str(column)
-            + " ?x) (LeftOf"
-            + str(column + 1)
-            + " ?x)))\n"
-        )
-        planning_domain += "\t\t\t\t(and (Column" + str(column + 1) + " ?x))\n"
-        # ~ planning_domain += "\t\t:delete ((Column"+str(column)+" ?x))\n"
-        planning_domain += "\t\t\t\t)\n"
-
-    # ~ Chiudo la parentesi di moveRight
-    planning_domain += "\t\t))\n"
-
-    # ~ Genero moveLeft
-    planning_domain += "\t(:action moveLeft\n"
-    planning_domain += "\t\t:parameters (?x)\n"
-    planning_domain += "\t\t:precondition (and (mko (Columns ?x)))\n"
-    planning_domain += "\t\t:effect "
-
-    planning_domain += "(and \n"
-    for column in range(2, columns + 1):
-        # planning_domain += "\t\t\n"
-        planning_domain += "\t\t\t(when (mko (LeftOf" + str(column) + " ?x))\n"
-        planning_domain += "\t\t\t\t(and (LeftOf" + str(column - 1) + " ?x))\n"
-        # ~ planning_domain += "\t\t:delete ()\n"
-        planning_domain += "\t\t\t\t)\n"
-
-    for column in range(1, columns):
-        # planning_domain += "\t\t\n"
-        if column != columns - 1:
-            planning_domain += (
-                "\t\t\t(when (and (mko (RightOf"
-                + str(column)
-                + " ?x)) (not (RightOf"
-                + str(column + 1)
-                + " ?x)))\n"
-            )
-        else:
-            planning_domain += "\t\t\t(when (mko (RightOf" + str(column) + " ?x))\n"
-        planning_domain += "\t\t\t\t(and (RightOf" + str(column - 1) + " ?x)\n"
-        planning_domain += "\t\t\t\t(not (RightOf" + str(column) + " ?x)))\n"
-        planning_domain += "\t\t\t\t)\n"
-
-    for column in range(1, columns):
-        # planning_domain += "\t\t(\n"
-        planning_domain += "\t\t\t(when (mko (Column" + str(column) + " ?x))\n"
-        planning_domain += "\t\t\t\t(and (Column" + str(column - 1) + " ?x)\n"
-        planning_domain += "\t\t\t\t(not (Column" + str(column) + " ?x)))\n"
-        planning_domain += "\t\t\t\t)\n"
-
-    for column in range(1, columns):
-        # planning_domain += "\t\t(\n"
-        planning_domain += (
-            "\t\t\t(when (mko (and (RightOf"
-            + str(column)
-            + " ?x) (LeftOf"
-            + str(column + 1)
-            + " ?x)))\n"
-        )
-        planning_domain += "\t\t\t\t(and (Column" + str(column - 1) + " ?x))\n"
-        # ~ planning_domain += "\t\t:delete ((Column"+str(column)+" ?x))\n"
-        planning_domain += "\t\t\t\t)\n"
-
-    # ~ Chiudo la parentesi di moveLeft
-    planning_domain += "\t\t))\n"
-
-    # ~ Genero moveUp
-    planning_domain += "\t(:action moveUp\n"
-    planning_domain += "\t\t:parameters (?x)\n"
-    planning_domain += "\t\t:precondition (and (mko (Rows ?x)))\n"
-    planning_domain += "\t\t:effect "
-
-    planning_domain += "(and \n"
-    for row in range(rows - 1):
-        # planning_domain += "\t\t(\n"
-        planning_domain += "\t\t\t(when (mko (AboveOf" + str(row) + " ?x))\n"
-        planning_domain += "\t\t\t\t(and (AboveOf" + str(row + 1) + " ?x))\n"
-        # ~ planning_domain += "\t\t:delete ()\n"
-        planning_domain += "\t\t\t\t)\n"
-
-    for row in range(1, rows):
-        # planning_domain += "\t\t(\n"
-        if row != 1:
-            planning_domain += (
-                "\t\t\t(when (and (mko (BelowOf"
-                + str(row)
-                + " ?x)) (not (BelowOf"
-                + str(row - 1)
-                + " ?x)))\n"
-            )
-        else:
-            planning_domain += "\t\t\t(when (mko (BelowOf" + str(row) + " ?x))\n"
-        planning_domain += "\t\t\t\t(and (BelowOf" + str(row + 1) + " ?x)\n"
-        planning_domain += "\t\t\t\t(not (BelowOf" + str(row) + " ?x)))\n"
-        planning_domain += "\t\t\t\t)\n"
-
-    for row in range(rows - 1):
-        # planning_domain += "\t\t(\n"
-        planning_domain += "\t\t\t(when (mko (Row" + str(row) + " ?x))\n"
-        planning_domain += "\t\t\t\t(and (Row" + str(row + 1) + " ?x)\n"
-        planning_domain += "\t\t\t\t(not (Row" + str(row) + " ?x)))\n"
-        planning_domain += "\t\t\t\t)\n"
-
-    for row in range(rows - 1):
-        # planning_domain += "\t\t(\n"
-        planning_domain += (
-            "\t\t\t(when (mko (and (AboveOf"
-            + str(row)
-            + " ?x) (BelowOf"
-            + str(row + 1)
-            + " ?x)))\n"
-        )
-        planning_domain += "\t\t\t\t(and (Row" + str(row + 1) + " ?x))\n"
-        # ~ planning_domain += "\t\t:delete ((Row"+str(row)+" ?x))\n"
-        planning_domain += "\t\t\t\t)\n"
-
-    # ~ Chiudo la parentesi di moveUp
-    planning_domain += "\t\t))\n"
-
-    # ~ Genero moveDown
-    planning_domain += "\t(:action moveDown\n"
-    planning_domain += "\t\t:parameters (?x)\n"
-    planning_domain += "\t\t:precondition (and (mko (Rows ?x)))\n"
-    planning_domain += "\t\t:effect "
-
-    planning_domain += "(and \n"
-    for row in range(2, rows + 1):
-        # planning_domain += "\t\t(\n"
-        planning_domain += "\t\t\t(when (mko (BelowOf" + str(row) + " ?x))\n"
-        planning_domain += "\t\t\t\t(and (BelowOf" + str(row - 1) + " ?x))\n"
-        # ~ planning_domain += "\t\t:delete ()\n"
-        planning_domain += "\t\t\t\t)\n"
-
-    for row in range(1, rows):
-        # planning_domain += "\t\t(\n"
-        if row != rows - 1:
-            planning_domain += (
-                "\t\t\t(when (and (mko (AboveOf"
-                + str(row)
-                + " ?x)) (not (AboveOf"
-                + str(row + 1)
-                + " ?x)))\n"
-            )
-        else:
-            planning_domain += "\t\t\t(when (mko (AboveOf" + str(row) + " ?x))\n"
-        planning_domain += "\t\t\t\t(and (AboveOf" + str(row - 1) + " ?x)\n"
-        planning_domain += "\t\t\t\t(not (AboveOf" + str(row) + " ?x)))\n"
-        planning_domain += "\t\t\t\t)\n"
-
-    for row in range(1, rows):
-        # planning_domain += "\t\t(\n"
-        planning_domain += "\t\t\t(when (mko (Row" + str(row) + " ?x))\n"
-        planning_domain += "\t\t\t\t(and (Row" + str(row - 1) + " ?x)\n"
-        planning_domain += "\t\t\t\t(not (Row" + str(row) + " ?x)))\n"
-        planning_domain += "\t\t\t\t)\n"
-
-    for row in range(1, rows):
-        # planning_domain += "\t\t(\n"
-        planning_domain += (
-            "\t\t\t(when (mko (and (AboveOf"
-            + str(row)
-            + " ?x) (BelowOf"
-            + str(row + 1)
-            + " ?x)))\n"
-        )
-        planning_domain += "\t\t\t\t(and (Row" + str(row - 1) + " ?x))\n"
-        # ~ planning_domain += "\t\t:delete ((Row"+str(row)+" ?x))\n"
-        planning_domain += "\t\t\t\t)\n"
-
-    # ~ Chiudo la parentesi di moveDown
-    planning_domain += "\t\t))\n"
-
-    # ~ Creo il file e gli scrivo dentro planning_domain
-    output_file = open(filename, "a")
-    output_file.write(planning_domain)
-    output_file.close()
-
-    planning_domain = ""
-    print("Finito la sezione :action\n")
-
-    # ~ Chiudo la parentesi di domain
-    planning_domain += "\n)"
-
-    # ~ Creo il file e gli scrivo dentro planning_domain
-    output_file = open(filename, "a")
-    output_file.write(planning_domain)
-    output_file.close()
-
-    print("Finito di scrivere il dominio!\n")
+# ─── OWL helpers ─────────────────────────────────────────────────────────────
 
 
-def generate_planning_problem(rightOf, leftOf, aboveOf, belowOf, column, row, filename):
+def _u(name):
+    return f"<{BASE_URL}{name}>"
 
-    # ~ Inizializzo il problema di planning
-    planning_domain = """(define (problem robotProblem)
-    (:domain robot)\n"""
 
-    # ~ Genero gli individui in :objects
-    planning_domain += "\t(:objects robot)\n"
-
-    # ~ Definisco :init
-    planning_domain += "\t(:init\n"
-    planning_domain += "\t\t(RightOf" + str(rightOf) + " robot)\n"
-    planning_domain += "\t\t(LeftOf" + str(leftOf) + " robot)\n"
-    planning_domain += "\t\t(AboveOf" + str(aboveOf) + " robot)\n"
-    planning_domain += "\t\t(BelowOf" + str(belowOf) + " robot)\n"
-
-    # ~ Chiudo la parentesi di init
-    planning_domain += "\t)\n"
-
-    # ~ Definisco il goal
-    planning_domain += (
-        "\t(:goal (and (Column"
-        + str(column)
-        + " robot) (Row"
-        + str(row)
-        + " robot)))\n"
+def _class_self(name):
+    """Class with self-referential rdfs:subClassOf (core fragment convention)."""
+    return (
+        f"###  {BASE_URL}{name}\n"
+        f" {_u(name)} rdf:type owl:Class ;\n"
+        f"{PAD}rdfs:subClassOf {_u(name)} .\n\n\n"
     )
 
-    # ~ Chiudo la parentesi di domain
-    planning_domain += "\n)"
 
-    # ~ Creo il file e gli scrivo dentro planning_domain
-    output_file = open(filename, "w")
-    output_file.write(planning_domain)
-    output_file.close()
+def _class_sub(name, parent):
+    """Class with one rdfs:subClassOf."""
+    return (
+        f"###  {BASE_URL}{name}\n"
+        f" {_u(name)} rdf:type owl:Class ;\n"
+        f"{PAD}rdfs:subClassOf {_u(parent)} .\n\n\n"
+    )
 
+
+def _class_sub_disj(name, parent, disjoint):
+    """Class with rdfs:subClassOf and owl:disjointWith."""
+    return (
+        f"###  {BASE_URL}{name}\n"
+        f" {_u(name)} rdf:type owl:Class ;\n"
+        f"{PAD}rdfs:subClassOf {_u(parent)} ;\n"
+        f"{PAD}owl:disjointWith {_u(disjoint)} .\n\n\n"
+    )
+
+
+# ─── Generator functions ──────────────────────────────────────────────────────
+
+
+def generate_owl(n, path):
+    # Header format matches reference (leading newline, 4-space indent on first prefix)
+    header = (
+        f"\n    @prefix : <{BASE_URL}robot> .\n"
+        "@prefix owl: <http://www.w3.org/2002/07/owl#> .\n"
+        "@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .\n"
+        "@prefix xml: <http://www.w3.org/XML/1998/namespace> .\n"
+        "@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .\n"
+        "@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .\n"
+        f"@base <{BASE_URL}robot> .\n"
+        "\n    "
+    )
+
+    body = f"<{BASE_URL}robot> rdf:type owl:Ontology .\n\n"
+    body += " ################################################################# \n"
+    body += " #    Classes\n"
+    body += " ################################################################# \n"
+    body += " \n"
+
+    # Column/Row — self-referential subClassOf (no TBox inference, just identity)
+    for i in range(n):
+        body += _class_self(f"Column{i}")
+    for i in range(n):
+        body += _class_self(f"Row{i}")
+
+    # RightOf chain: RightOf0 ⊑ Columns; RightOf_i ⊑ RightOf_{i-1}, disjointWith LeftOf_i
+    body += _class_sub("RightOf0", "Columns")
+    for i in range(1, n):
+        body += _class_sub_disj(f"RightOf{i}", f"RightOf{i - 1}", f"LeftOf{i}")
+
+    # LeftOf chain: LeftOf_n ⊑ Columns; LeftOf_i ⊑ LeftOf_{i+1}  (descending)
+    body += _class_sub(f"LeftOf{n}", "Columns")
+    for i in range(n - 1, 0, -1):
+        body += _class_sub(f"LeftOf{i}", f"LeftOf{i + 1}")
+
+    # AboveOf chain: AboveOf0 ⊑ Rows; AboveOf_i ⊑ AboveOf_{i-1}, disjointWith BelowOf_i
+    body += _class_sub("AboveOf0", "Rows")
+    for i in range(1, n):
+        body += _class_sub_disj(f"AboveOf{i}", f"AboveOf{i - 1}", f"BelowOf{i}")
+
+    # BelowOf chain: BelowOf_n ⊑ Rows; BelowOf_i ⊑ BelowOf_{i+1}  (descending)
+    body += _class_sub(f"BelowOf{n}", "Rows")
+    for i in range(n - 1, 0, -1):
+        body += _class_sub(f"BelowOf{i}", f"BelowOf{i + 1}")
+
+    body += "###  Generated by the OWL API (version 4.5.9.2019-02-01T07:24:44Z) https://github.com/owlcs/owlapi\n"
+
+    with open(path, "w") as f:
+        f.write(header + body)
+
+
+def generate_domain(n, path):
+    lines = []
+    lines.append("(define (domain robot)")
+
+    # Predicates
+    lines.append("\t(:predicates")
+    lines.append("\t\t(Columns ?x)")
+    lines.append("\t\t(Rows ?x)")
+    for i in range(n):
+        lines.append(f"\t\t(Column{i} ?x)")
+    for i in range(n):
+        lines.append(f"\t\t(RightOf{i} ?x)")
+    for i in range(1, n + 1):
+        lines.append(f"\t\t(LeftOf{i} ?x)")
+    for i in range(n):
+        lines.append(f"\t\t(Row{i} ?x)")
+    for i in range(n):
+        lines.append(f"\t\t(AboveOf{i} ?x)")
+    for i in range(1, n + 1):
+        lines.append(f"\t\t(BelowOf{i} ?x)")
+    lines.append("\t)")
+
+    # ── moveRight ────────────────────────────────────────────────────────────
+    # RightOf_i is monotone upward: add the next marker for each level held.
+    # LeftOf must shift forward (only one LeftOf holds at a time).
+    # Column and re-derivation track the exact position.
+    lines.append("\t(:action moveRight")
+    lines.append("\t\t:parameters (?x)")
+    lines.append("\t\t:precondition (and (mko (Columns ?x)))")
+    lines.append("\t\t:effect (and ")
+
+    # 1. RightOf additions (cumulative — no delete)
+    for i in range(n - 1):
+        lines.append(f"\t\t\t(when (mko (RightOf{i} ?x))")
+        lines.append(f"\t\t\t\t(and (RightOf{i + 1} ?x))")
+        lines.append("\t\t\t\t)")
+
+    # 2. LeftOf shift: move the boundary marker one step right
+    #    LeftOf1 is the most specific; higher LeftOf{i} are implied by it.
+    #    Guard with (not (LeftOf{i-1})) for i>1 to avoid double-shifting implied markers.
+    for i in range(1, n):
+        if i == 1:
+            lines.append(f"\t\t\t(when (mko (LeftOf{i} ?x))")
+        else:
+            lines.append(
+                f"\t\t\t(when (and (mko (LeftOf{i} ?x)) (not (LeftOf{i - 1} ?x)))"
+            )
+        lines.append(f"\t\t\t\t(and (LeftOf{i + 1} ?x)")
+        lines.append(f"\t\t\t\t(not (LeftOf{i} ?x)))")
+        lines.append("\t\t\t\t)")
+
+    # 3. Column shift
+    for i in range(n - 1):
+        lines.append(f"\t\t\t(when (mko (Column{i} ?x))")
+        lines.append(f"\t\t\t\t(and (Column{i + 1} ?x)")
+        lines.append(f"\t\t\t\t(not (Column{i} ?x)))")
+        lines.append("\t\t\t\t)")
+
+    # 4. Column re-derivation from new RightOf/LeftOf combination
+    for i in range(n - 1):
+        lines.append(f"\t\t\t(when (mko (and (RightOf{i} ?x) (LeftOf{i + 1} ?x)))")
+        lines.append(f"\t\t\t\t(and (Column{i + 1} ?x))")
+        lines.append("\t\t\t\t)")
+
+    lines.append("\t\t))")
+
+    # ── moveLeft ─────────────────────────────────────────────────────────────
+    lines.append("\t(:action moveLeft")
+    lines.append("\t\t:parameters (?x)")
+    lines.append("\t\t:precondition (and (mko (Columns ?x)))")
+    lines.append("\t\t:effect (and ")
+
+    # 1. LeftOf additions (cumulative — no delete)
+    for i in range(2, n + 1):
+        lines.append(f"\t\t\t(when (mko (LeftOf{i} ?x))")
+        lines.append(f"\t\t\t\t(and (LeftOf{i - 1} ?x))")
+        lines.append("\t\t\t\t)")
+
+    # 2. RightOf shift: move the boundary marker one step left
+    #    RightOf{n-1} is the most specific; guard with (not (RightOf{i+1})) for i<n-1.
+    for i in range(1, n):
+        if i == n - 1:
+            lines.append(f"\t\t\t(when (mko (RightOf{i} ?x))")
+        else:
+            lines.append(
+                f"\t\t\t(when (and (mko (RightOf{i} ?x)) (not (RightOf{i + 1} ?x)))"
+            )
+        lines.append(f"\t\t\t\t(and (RightOf{i - 1} ?x)")
+        lines.append(f"\t\t\t\t(not (RightOf{i} ?x)))")
+        lines.append("\t\t\t\t)")
+
+    # 3. Column shift
+    for i in range(1, n):
+        lines.append(f"\t\t\t(when (mko (Column{i} ?x))")
+        lines.append(f"\t\t\t\t(and (Column{i - 1} ?x)")
+        lines.append(f"\t\t\t\t(not (Column{i} ?x)))")
+        lines.append("\t\t\t\t)")
+
+    # 4. Column re-derivation from new RightOf/LeftOf combination
+    for i in range(1, n):
+        lines.append(f"\t\t\t(when (mko (and (RightOf{i} ?x) (LeftOf{i + 1} ?x)))")
+        lines.append(f"\t\t\t\t(and (Column{i - 1} ?x))")
+        lines.append("\t\t\t\t)")
+
+    lines.append("\t\t))")
+
+    # ── moveUp ───────────────────────────────────────────────────────────────
+    lines.append("\t(:action moveUp")
+    lines.append("\t\t:parameters (?x)")
+    lines.append("\t\t:precondition (and (mko (Rows ?x)))")
+    lines.append("\t\t:effect (and ")
+
+    # 1. AboveOf additions (cumulative — no delete)
+    for i in range(n - 1):
+        lines.append(f"\t\t\t(when (mko (AboveOf{i} ?x))")
+        lines.append(f"\t\t\t\t(and (AboveOf{i + 1} ?x))")
+        lines.append("\t\t\t\t)")
+
+    # 2. BelowOf shift
+    for i in range(1, n):
+        if i == 1:
+            lines.append(f"\t\t\t(when (mko (BelowOf{i} ?x))")
+        else:
+            lines.append(
+                f"\t\t\t(when (and (mko (BelowOf{i} ?x)) (not (BelowOf{i - 1} ?x)))"
+            )
+        lines.append(f"\t\t\t\t(and (BelowOf{i + 1} ?x)")
+        lines.append(f"\t\t\t\t(not (BelowOf{i} ?x)))")
+        lines.append("\t\t\t\t)")
+
+    # 3. Row shift
+    for i in range(n - 1):
+        lines.append(f"\t\t\t(when (mko (Row{i} ?x))")
+        lines.append(f"\t\t\t\t(and (Row{i + 1} ?x)")
+        lines.append(f"\t\t\t\t(not (Row{i} ?x)))")
+        lines.append("\t\t\t\t)")
+
+    # 4. Row re-derivation from new AboveOf/BelowOf combination
+    for i in range(n - 1):
+        lines.append(f"\t\t\t(when (mko (and (AboveOf{i} ?x) (BelowOf{i + 1} ?x)))")
+        lines.append(f"\t\t\t\t(and (Row{i + 1} ?x))")
+        lines.append("\t\t\t\t)")
+
+    lines.append("\t\t))")
+
+    # ── moveDown ─────────────────────────────────────────────────────────────
+    lines.append("\t(:action moveDown")
+    lines.append("\t\t:parameters (?x)")
+    lines.append("\t\t:precondition (and (mko (Rows ?x)))")
+    lines.append("\t\t:effect (and ")
+
+    # 1. BelowOf additions (cumulative — no delete)
+    for i in range(2, n + 1):
+        lines.append(f"\t\t\t(when (mko (BelowOf{i} ?x))")
+        lines.append(f"\t\t\t\t(and (BelowOf{i - 1} ?x))")
+        lines.append("\t\t\t\t)")
+
+    # 2. AboveOf shift
+    for i in range(1, n):
+        if i == n - 1:
+            lines.append(f"\t\t\t(when (mko (AboveOf{i} ?x))")
+        else:
+            lines.append(
+                f"\t\t\t(when (and (mko (AboveOf{i} ?x)) (not (AboveOf{i + 1} ?x)))"
+            )
+        lines.append(f"\t\t\t\t(and (AboveOf{i - 1} ?x)")
+        lines.append(f"\t\t\t\t(not (AboveOf{i} ?x)))")
+        lines.append("\t\t\t\t)")
+
+    # 3. Row shift
+    for i in range(1, n):
+        lines.append(f"\t\t\t(when (mko (Row{i} ?x))")
+        lines.append(f"\t\t\t\t(and (Row{i - 1} ?x)")
+        lines.append(f"\t\t\t\t(not (Row{i} ?x)))")
+        lines.append("\t\t\t\t)")
+
+    # 4. Row re-derivation from new AboveOf/BelowOf combination
+    for i in range(1, n):
+        lines.append(f"\t\t\t(when (mko (and (AboveOf{i} ?x) (BelowOf{i + 1} ?x)))")
+        lines.append(f"\t\t\t\t(and (Row{i - 1} ?x))")
+        lines.append("\t\t\t\t)")
+
+    lines.append("\t\t))")
+
+    lines.append("")
+    lines.append(")")
+
+    with open(path, "w") as f:
+        f.write("\n".join(lines) + "\n")
+
+
+def generate_problem(n, path):
+    """Robot starts at column 1, row 0; goal is Column2 and Row1."""
+    lines = [
+        "(define (problem robotProblem)",
+        "\t(:domain robot)",
+        "\t(:objects robot)",
+        "\t(:init",
+        f"\t\t(RightOf1 robot)",
+        f"\t\t(LeftOf{n - 1} robot)",
+        f"\t\t(AboveOf0 robot)",
+        f"\t\t(BelowOf{n - 1} robot)",
+        "\t)",
+        "\t(:goal (and (Column2 robot) (Row1 robot)))",
+        "",
+        ")",
+    ]
+    with open(path, "w") as f:
+        f.write("\n".join(lines) + "\n")
+
+
+# ─── Main ─────────────────────────────────────────────────────────────────────
 
 if __name__ == "__main__":
-    for t in range(3, 23, 1):
-        columns = t
-        rows = t
-        generate_planning_domain(
-            columns=columns,
-            rows=rows,
-            filename="generated/robotDomain" + str(t) + ".pddl",
-            onto="generated/TTL" + str(t) + ".owl",
-        )
-        generate_planning_problem(
-            rightOf=1,
-            leftOf=columns - 1,
-            aboveOf=0,
-            belowOf=rows - 1,
-            column=2,
-            row=1,
-            filename="generated/robotProblem" + str(t) + ".pddl",
-        )
+    out_dir = DEFAULT_OUT_DIR
+    os.makedirs(out_dir, exist_ok=True)
+    for n in range(3, 23):
+        generate_owl(n, os.path.join(out_dir, f"TTL{n}.owl"))
+        generate_domain(n, os.path.join(out_dir, f"robotDomain{n}.pddl"))
+        generate_problem(n, os.path.join(out_dir, f"robotProblem{n}.pddl"))
+        print(f"Generated n={n}")

@@ -1,0 +1,12 @@
+(define (problem ASSEMBLY-2-0)
+(:domain assembly)
+(:objects phone_1 phone_2 screen_1 screen_2 battery_1 battery_2 board_1 board_2 )
+(:init
+ (Screen screen_1)
+ (Battery battery_1)
+ (Processor board_1)
+ (Screen screen_2)
+ (Battery battery_2)
+ (Processor board_2))
+(:goal (AND (MKO (FullyEquipped phone_1)) (MKO (FullyEquipped phone_2))))
+)

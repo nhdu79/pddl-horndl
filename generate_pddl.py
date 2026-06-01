@@ -75,7 +75,11 @@ RLS = "code/nemo/t_closure.rls"
 
 ALL_FRAGMENTS = ["core", "horn"]
 ALL_VARIANTS = ["original", "var0", "var1", "var2", "var3"]
-ALL_TASKS = ["blocks", "catOG", "elevator", "robot", "robotConj", "task", "order", "trip", "tripv2"]
+ALL_TASKS = ["blocks", "catOG", "drones", "elevator", "robot", "robotConj", "task", "order", "trip", "tripv2", "assembly"]
+
+# Tasks that only have inputs for the "horn" fragment.
+# Running them under "core" will fail at input-file lookup.
+HORN_ONLY_TASKS = {"assembly", "drones", "robotConj"}
 
 
 @dataclass(frozen=True)
@@ -94,6 +98,7 @@ VARIANT_CONFIGS: dict[str, Optional[VariantConfig]] = {
 
 TASK_ELEMENTS: dict[str, list[str]] = {
     "catOG": [str(i) for i in range(6, 26)],
+    "drones": [f"{n}-{m}" for n in range(5, 11) for m in range(5, 9)],
     "elevator": [str(i) for i in range(15, 35)],
     "robot": [str(i) for i in range(3, 23)],
     "robotConj": [str(i) for i in range(3, 23)],
@@ -103,6 +108,15 @@ TASK_ELEMENTS: dict[str, list[str]] = {
     "order": [ "4", "5", "6", "7", "10", "15", "20", "25", "30", "35", "40", "45", "50", "55", "60" ],
     "trip": [ "4", "5", "6", "7", "10", "15", "20", "25", "30", "35", "40", "45", "50", "55", "60" ],
     "tripv2": [ "4", "5", "6", "7", "10", "15", "20", "25", "30", "35", "40", "45", "50", "55", "60" ],
+    # Horn-only.  Two variants:
+    #   var0 (N=1..5): clean start, goal = FullyEquipped
+    #   var1 (N=2..6): rework + quality-record: odd phones fully assembled but not
+    #                  validated; even phones empty; optimal plan validates odd phones
+    #                  first so stratum 3 preserves ProductRecord on rework;
+    #                  goal = ProductRecord
+    "assembly": [
+        "1-0", "2-0", "2-1", "3-0", "3-1", "4-0", "4-1", "5-0", "5-1", "6-1",
+    ],
 }
 
 
@@ -111,26 +125,36 @@ TASK_ELEMENTS: dict[str, list[str]] = {
 # ──────────────────────────────────────────────────────────────────────────────
 
 
-def owl_path(task: str, element: str) -> str:
-    prefix = f"benchmarks/inputs/{task}"
+def owl_path(fragment: str, task: str, element: str) -> str:
+    if task == "assembly":
+        return "benchmarks/inputs/horn/assembly/assembly.owl"
+    prefix = f"benchmarks/inputs/{fragment}/{task}"
     if task == "robot" or task == "robotConj":
         return f"{prefix}/TTL{element}.owl"
     return f"{prefix}/TTL.owl" if task != "blocks" else f"{prefix}/blocks.owl"
 
 
-def domain_path(task: str, element: str) -> str:
-    prefix = f"benchmarks/inputs/{task}"
+def domain_path(fragment: str, task: str, element: str) -> str:
+    if task == "assembly":
+        return "benchmarks/inputs/horn/assembly/domain.pddl"
+    prefix = f"benchmarks/inputs/{fragment}/{task}"
     if task == "robot" or task == "robotConj":
         return f"{prefix}/robotDomain{element}.pddl"
+    if task == "drones":
+        return f"{prefix}/drone.pddl"
     return f"{prefix}/domain.pddl"
 
 
-def problem_path(task: str, element: str) -> str:
-    prefix = f"benchmarks/inputs/{task}"
+def problem_path(fragment: str, task: str, element: str) -> str:
+    if task == "assembly":
+        return f"benchmarks/inputs/horn/assembly/probASSEMBLY-{element}.pddl"
+    prefix = f"benchmarks/inputs/{fragment}/{task}"
     if task == "blocks":
         return f"{prefix}/probBLOCKS{element}.pddl"
     elif task == "robotConj":
         return f"{prefix}/robotProblem{element}.pddl"
+    elif task == "drones":
+        return f"{prefix}/droneProblem{element}.pddl"
     return f"{prefix}/{task}Problem{element}.pddl"
 
 
@@ -157,9 +181,9 @@ def compile_instance(
     task: str,
     element: str,
 ) -> None:
-    owl = owl_path(task, element)
-    in_domain = domain_path(task, element)
-    in_problem = problem_path(task, element)
+    owl = owl_path(fragment, task, element)
+    in_domain = domain_path(fragment, task, element)
+    in_problem = problem_path(fragment, task, element)
     out_domain, out_problem, ts_domain, ts_problem = output_paths(
         fragment, variant, task, element
     )

@@ -1,0 +1,41 @@
+(define (domain Blocks)
+
+(:predicates
+	(onBlock ?x ?y)
+	(onTable ?x ?y)
+	(on ?x ?y)
+	(Block ?x)
+	(Table ?x)
+	(Blocked ?x)
+  (Holding ?x)
+)
+
+(:action pick-up
+  :parameters (?x ?y)
+  :precondition (and (mko (on ?x ?y))
+                     (not (mko (Blocked ?x)))
+                     (not (mko (exists (?x) (Holding ?x))))
+  )
+  :effect (and (not (on ?x ?y))
+    (not (on_block ?x ?y))
+    (not (on_table ?x ?y))
+    (Holding ?x)
+    (not (Blocked ?y))
+  )
+)
+
+(:action put-down
+  :parameters (?x ?y)
+  :precondition (and (Holding ?x)
+                     (not (mko (Blocked ?y)))
+  )
+  :effect (and (not (Holding ?x))
+               (not (Blocked ?x))
+               (when (mko (Table ?y))
+                     (onTable ?x ?y))
+               (when (mko (Block ?y))
+                     (onBlock ?x ?y))
+  )
+)
+
+)

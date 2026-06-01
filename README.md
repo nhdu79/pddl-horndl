@@ -63,7 +63,9 @@ python3 generate_pddl.py --help
 
 Available fragments: `core`, `horn`
 Available variants: `original`, `var0`, `var1`, `var2`, `var3`
-Available tasks: `blocks`, `catOG`, `elevator`, `robot`, `robotConj`, `task`, `order`, `trip`, `tripv2`
+Available tasks: `blocks`, `catOG`, `drones`, `elevator`, `robot`, `robotConj`, `task`, `order`, `trip`, `tripv2`, `assembly`
+
+> **Horn-only tasks** — `assembly`, `drones`, and `robotConj` have inputs only under `benchmarks/inputs/horn/` and must be run with `--fragments horn`. Selecting them with `--fragments core` will fail at input-file lookup.
 
 #### Where are the written .pddl files?
 * Outputs are written to `benchmarks/outputs/[fragment]/[variant]/[task]/`
@@ -78,15 +80,20 @@ Available tasks: `blocks`, `catOG`, `elevator`, `robot`, `robotConj`, `task`, `o
     ```
 
 ## The Benchmark folder:
-* We keep the original .pddl files (domain + problem) from the work of Borgwardt et al. intact in their corresponding subfolders e.g. `benchmarks/robot`
-* All outputs of our pipeline are stored in `benchmarks/outputs/`
+* Input PDDL and OWL files are stored under `benchmarks/inputs/<fragment>/<task>/`, split by DL-Lite fragment (`core` or `horn`). For example, `benchmarks/inputs/horn/blocks/` holds the Horn-specific blocks inputs.
+* All outputs of our pipeline are stored in `benchmarks/outputs/<fragment>/<variant>/<task>/`.
 
 ## Mapping from Benchmark names in paper to folder names:
 
-* Cats^* => catOG
-* Elevator => elevator
-* TPSA => order
-* Robot^* => robot
-* VTA => trip
-* VTA-Roles => tripv2
-* TaskAssign => task
+| Paper name | Folder | Fragment |
+|---|---|---|
+| Cats\* | `catOG` | core + horn |
+| Drones | `drones` | horn only |
+| Elevator | `elevator` | core + horn |
+| TPSA | `order` | core + horn |
+| Robot\* | `robot` | core + horn |
+| RobotConj | `robotConj` | horn only |
+| VTA | `trip` | core + horn |
+| VTA-Roles | `tripv2` | core + horn |
+| TaskAssign | `task` | core + horn |
+| Assembly | `assembly` | horn only |

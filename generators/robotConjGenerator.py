@@ -381,7 +381,7 @@ def generate_planning_problem(rightOf, leftOf, aboveOf, belowOf, column, row, fi
 
 
 if __name__ == "__main__":
-    for t in range(50, 201, 10):
+    for t in range(3, 23, 1):
         columns = t
         rows = t
         generate_planning_domain(

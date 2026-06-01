@@ -7,6 +7,7 @@ types defined in owl.expressions and owl.axioms.
 
 Supported OWL constructors:
   owl:ObjectProperty, owl:FunctionalProperty, owl:InverseFunctionalProperty
+  owl:SymmetricProperty                                                    → P ⊑ P⁻
   rdfs:subPropertyOf, rdfs:domain, rdfs:range
   owl:Class with rdfs:subClassOf, owl:disjointWith
   owl:Nothing                                                              → ⊥  (OWL_NOTHING)
@@ -55,7 +56,6 @@ from owl.expressions import (
 _UNSUPPORTED_PROP_TYPES: list[tuple] = [
     (OWL.DatatypeProperty,    "owl:DatatypeProperty"),
     (OWL.TransitiveProperty,  "owl:TransitiveProperty"),
-    (OWL.SymmetricProperty,   "owl:SymmetricProperty"),
     (OWL.AsymmetricProperty,  "owl:AsymmetricProperty"),
     (OWL.ReflexiveProperty,   "owl:ReflexiveProperty"),
     (OWL.IrreflexiveProperty, "owl:IrreflexiveProperty"),
@@ -122,10 +122,11 @@ class _OWLBuilder:
         self._collect_ontology_iri()
         self._collect_atomic_concepts()  # concept(?X), atomic(?X) + negOf
         self._collect_atomic_roles()     # role(?P), atomic(?P) + invOf + negOf + domOf + rngOf
-        self._collect_role_axioms()      # funct, invFunct, subPropertyOf, domain, range
+        self._collect_role_axioms()      # funct, invFunct, symmetric, subPropertyOf, domain, range
         self._collect_concept_axioms()   # subClassOf, disjointWith on named subjects
         self._collect_general_axioms()   # subClassOf, disjointWith on blank-node subjects
         self._scan_unsupported()         # warn about constructs outside the supported fragment
+        self._deduplicate_axioms()
         return self._onto
 
     # ------------------------------------------------------------------
@@ -200,6 +201,7 @@ class _OWLBuilder:
         """
         funct(?P)    :- TRIPLE(?P, rdf:type, owl:FunctionalProperty)
         invFunct(?P) :- TRIPLE(?P, rdf:type, owl:InverseFunctionalProperty)
+        sub(?P, ?P⁻) :- TRIPLE(?P, rdf:type, owl:SymmetricProperty)
         sub(?P, ?Q)  :- TRIPLE(?P, rdfs:subPropertyOf, ?Q)
         sub(∃P, X)   :- TRIPLE(?P, rdfs:domain, ?X), domOf(∃P, ?P)
         sub(∃P⁻, X)  :- TRIPLE(?P, rdfs:range,  ?X), rngOf(∃P⁻, ?P)
@@ -212,6 +214,9 @@ class _OWLBuilder:
 
             if (node, RDF.type, OWL.InverseFunctionalProperty) in self._g:
                 self._add_axiom(InverseFunctionalRole(role))
+
+            if (node, RDF.type, OWL.SymmetricProperty) in self._g:
+                self._add_axiom(RoleInclusion(role, InverseRole(role)))
 
             for sup_node in self._g.objects(node, RDFS.subPropertyOf):
                 sup = self._resolve_role(sup_node)
@@ -369,6 +374,19 @@ class _OWLBuilder:
                 items.append(first)
             current = self._g.value(current, RDF.rest)
         return items
+
+    # ------------------------------------------------------------------
+    # Post-parse helpers
+    # ------------------------------------------------------------------
+
+    def _deduplicate_axioms(self) -> None:
+        seen: set[str] = set()
+        deduped = []
+        for ax in self._onto.axioms:
+            if ax.id not in seen:
+                seen.add(ax.id)
+                deduped.append(ax)
+        self._onto.axioms = deduped
 
     # ------------------------------------------------------------------
     # Post-parse coverage scan

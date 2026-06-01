@@ -11,10 +11,15 @@ from coherence_update.rules.symbols import (
     REQUEST,
     UPDATING,
 )
-from owl.expressions import EXISTENTIAL_PREFIX, INVERSE_EXISTENTIAL_PREFIX, INVERSE_PREFIX
+from compilation.utils import is_non_horn_aux_predicate_name
 from compilation.variant_options import (
     INCOMPATIBLE_UPDATE_PREDICATE_TYPES,
     UPDATING_PREDICATE_TYPES,
+)
+from owl.expressions import (
+    EXISTENTIAL_PREFIX,
+    INVERSE_EXISTENTIAL_PREFIX,
+    INVERSE_PREFIX,
 )
 from planning.logic import (
     Action,
@@ -127,11 +132,16 @@ class Domain:
         Called in Compiler
         """
         for action in self.actions:
-            pre = action.precondition
             updating = Fact(UPDATING)
             not_updating = Not(updating)
-            new_pre = And([pre, not_updating])
-            action.precondition = new_pre
+            # nonHornAux actions are auxiliary materialization actions that exist
+            # outside the standard planning/update cycle (e.g. they materialise
+            # facts derived from non-Horn OWL constructs).  They may fire at any
+            # point — including during an update — so both the (not updating) guard
+            # and the effect wrapping are intentionally left unchanged for them.
+            if is_non_horn_aux_predicate_name(action.name):
+                continue
+            action.precondition = And([action.precondition, not_updating])
             eff = action.effect
             if up == UPDATING_PREDICATE_TYPES["derived_predicate"]:
                 action.effect = wrapper(eff, horn=horn)
@@ -161,7 +171,19 @@ class Domain:
 
         if predicates is None:
             predicates = self.predicates
-        elements = self._construct_effects_for_update_action(predicates, new_preds, horn=horn)
+
+        # Predicates that come from the ontology but were not declared in the
+        # original PDDL domain must be registered in the domain before their
+        # update machinery (ins_X / del_X / …) is built.
+        existing_names = {p.name for p in self.predicates}
+        for p in predicates:
+            if p.name not in existing_names:
+                new_preds.append(p)
+                existing_names.add(p.name)
+
+        elements = self._construct_effects_for_update_action(
+            predicates, new_preds, horn=horn
+        )
 
         if up == UPDATING_PREDICATE_TYPES["action_effect"]:
             elements.append(DelEffect(Fact(UPDATING)))
@@ -260,19 +282,33 @@ class Domain:
                     f_ins_d_req = Fact(ins_d_req, d_vars)
                     f_del_d_req = Fact(del_d_req, d_vars)
 
-                    elements.extend([
-                        ForallEffect(d_vars, ConditionalEffect(f_ins_d, AddEffect(f_d))),
-                        ForallEffect(d_vars, ConditionalEffect(f_del_d, DelEffect(f_d))),
-                        ForallEffect(d_vars, ConditionalEffect(f_ins_d_req, DelEffect(f_ins_d_req))),
-                        ForallEffect(d_vars, ConditionalEffect(f_del_d_req, DelEffect(f_del_d_req))),
-                    ])
-                    new_preds.extend([
-                        Predicate(derived_name, d_params),
-                        Predicate(ins_d, d_params),
-                        Predicate(del_d, d_params),
-                        Predicate(ins_d_req, d_params),
-                        Predicate(del_d_req, d_params),
-                        Predicate(INS_CL + derived_name, d_params),
-                    ])
+                    elements.extend(
+                        [
+                            ForallEffect(
+                                d_vars, ConditionalEffect(f_ins_d, AddEffect(f_d))
+                            ),
+                            ForallEffect(
+                                d_vars, ConditionalEffect(f_del_d, DelEffect(f_d))
+                            ),
+                            ForallEffect(
+                                d_vars,
+                                ConditionalEffect(f_ins_d_req, DelEffect(f_ins_d_req)),
+                            ),
+                            ForallEffect(
+                                d_vars,
+                                ConditionalEffect(f_del_d_req, DelEffect(f_del_d_req)),
+                            ),
+                        ]
+                    )
+                    new_preds.extend(
+                        [
+                            Predicate(derived_name, d_params),
+                            Predicate(ins_d, d_params),
+                            Predicate(del_d, d_params),
+                            Predicate(ins_d_req, d_params),
+                            Predicate(del_d_req, d_params),
+                            Predicate(INS_CL + derived_name, d_params),
+                        ]
+                    )
 
         return elements

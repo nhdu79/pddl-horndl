@@ -15,6 +15,7 @@ from compilation.utils import (
     get_parameter_list,
     get_query_id,
     is_coherence_update_predicate_name,
+    is_non_horn_aux_predicate_name,
     is_primed_predicate_name,
     is_update_predicate_name,
     prime_predicate_name,
@@ -193,6 +194,14 @@ class Compiler:
         is_horn = isinstance(self.update_runner, HornUpdateRunner)
         self.domain.adjust_actions(self.update_runner.updating_pred_type, horn=is_horn)
         all_predicates = self.update_runner.predicates_for_domain(self.domain.predicates)
+        # nonHornAux predicates are auxiliary derived predicates used as a bridge in the
+        # input domain (e.g. for qualified someValuesFrom restrictions that are outside
+        # the Horn DL-Lite fragment). They must not be extended with coherence-update
+        # machinery (ins_X / del_X / Ap_X / Am_X effects and request predicates).
+        all_predicates = [
+            p for p in all_predicates if not is_non_horn_aux_predicate_name(p.name)
+        ]
+
         self.domain.construct_update_action(
             self.update_runner.updating_pred_type,
             self.update_runner.incompatible_update_pred_type,
@@ -215,6 +224,7 @@ class Compiler:
             p.name
             for p in self.domain.predicates
             if not is_coherence_update_predicate_name(p.name)
+            and not is_non_horn_aux_predicate_name(p.name)
         }
         missing = appeared_in_domain - self.update_runner.atomic_predicates()
         concepts, roles = [], []
