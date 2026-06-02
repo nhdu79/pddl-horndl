@@ -13,6 +13,29 @@ import tempfile
 import unittest
 from pathlib import Path
 
+from coherence_update.prioritized_update import (
+    build_rules_for_prioritized_coherence_update_semantics,
+)
+from owl import (
+    OWL_NOTHING,
+    OWL_THING,
+    AtomicConcept,
+    AtomicRole,
+    ConceptInclusion,
+    ExistentialConcept,
+    FunctionalRole,
+    IntersectionConcept,
+    InverseExistentialConcept,
+    InverseFunctionalRole,
+    InverseRole,
+    NegatedConcept,
+    NegatedRole,
+    Ontology,
+    RoleInclusion,
+    parse_owl,
+    saturate_role_inclusions,
+)
+
 # Locate benchmark ontologies relative to this file
 _REPO = Path(__file__).parents[2]
 _ROBOT_OWL = _REPO / "benchmarks" / "inputs" / "robotConj" / "TTL3.owl"
@@ -20,33 +43,11 @@ _DRONES_OWL = _REPO / "benchmarks" / "inputs" / "drones" / "TTL.owl"
 
 sys.path.insert(0, str(_REPO / "code"))
 
-from owl import (
-    parse_owl,
-    saturate_role_inclusions,
-    Ontology,
-    AtomicConcept,
-    AtomicRole,
-    ConceptInclusion,
-    ExistentialConcept,
-    FunctionalRole,
-    IntersectionConcept,
-    InverseFunctionalRole,
-    InverseExistentialConcept,
-    InverseRole,
-    NegatedConcept,
-    NegatedRole,
-    OWL_NOTHING,
-    OWL_THING,
-    RoleInclusion,
-)
-from coherence_update.prioritized_update import (
-    build_rules_for_prioritized_coherence_update_semantics,
-)
-
 
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def _make_ontology(ttl: str) -> Ontology:
     """Write ttl to a temp file, parse, and return the Ontology."""
@@ -72,8 +73,8 @@ _PREFIXES = """\
 # TestExpressions — dataclass properties and ids
 # ---------------------------------------------------------------------------
 
-class TestExpressions(unittest.TestCase):
 
+class TestExpressions(unittest.TestCase):
     def test_atomic_concept_id(self):
         c = AtomicConcept("http://test.org/SomeConcept")
         self.assertEqual(c.id, "someconcept")
@@ -145,15 +146,18 @@ class TestExpressions(unittest.TestCase):
 # TestOntologyContainer — Ontology helper methods
 # ---------------------------------------------------------------------------
 
-class TestOntologyContainer(unittest.TestCase):
 
+class TestOntologyContainer(unittest.TestCase):
     def setUp(self):
-        self.on = _make_ontology(_PREFIXES + """
+        self.on = _make_ontology(
+            _PREFIXES
+            + """
 :A rdf:type owl:Class .
 :B rdf:type owl:Class .
 :R rdf:type owl:ObjectProperty .
 :A rdfs:subClassOf :B .
-""")
+"""
+        )
 
     def test_is_supported_true(self):
         self.assertTrue(self.on.is_supported)
@@ -200,8 +204,8 @@ class TestOntologyContainer(unittest.TestCase):
 # TestParseOwlRobotConj — benchmarks/inputs/robotConj/TTL3.owl
 # ---------------------------------------------------------------------------
 
-class TestParseOwlRobotConj(unittest.TestCase):
 
+class TestParseOwlRobotConj(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.on = parse_owl(str(_ROBOT_OWL))
@@ -218,28 +222,33 @@ class TestParseOwlRobotConj(unittest.TestCase):
     def test_atomic_concept_count(self):
         # 17 named concepts, excluding OWL_THING / OWL_NOTHING
         atomic = [
-            c for c in self.on.concepts.values()
+            c
+            for c in self.on.concepts.values()
             if isinstance(c, AtomicConcept) and c not in (OWL_THING, OWL_NOTHING)
         ]
         self.assertEqual(len(atomic), 17)
 
     def test_negated_concept_sup_count(self):
         neg_sup = [
-            ax for ax in self.on.axioms
+            ax
+            for ax in self.on.axioms
             if isinstance(ax, ConceptInclusion) and isinstance(ax.sup, NegatedConcept)
         ]
         self.assertEqual(len(neg_sup), 4)
 
     def test_intersection_sub_count(self):
         inter_sub = [
-            ax for ax in self.on.axioms
-            if isinstance(ax, ConceptInclusion) and isinstance(ax.sub, IntersectionConcept)
+            ax
+            for ax in self.on.axioms
+            if isinstance(ax, ConceptInclusion)
+            and isinstance(ax.sub, IntersectionConcept)
         ]
         self.assertEqual(len(inter_sub), 6)
 
     def test_no_owl_nothing_sup(self):
         nothing_sup = [
-            ax for ax in self.on.axioms
+            ax
+            for ax in self.on.axioms
             if isinstance(ax, ConceptInclusion) and ax.sup is OWL_NOTHING
         ]
         self.assertEqual(len(nothing_sup), 0)
@@ -253,8 +262,8 @@ class TestParseOwlRobotConj(unittest.TestCase):
 # TestParseOwlDrones — benchmarks/inputs/drones/TTL.owl
 # ---------------------------------------------------------------------------
 
-class TestParseOwlDrones(unittest.TestCase):
 
+class TestParseOwlDrones(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.on = parse_owl(str(_DRONES_OWL))
@@ -289,7 +298,8 @@ class TestParseOwlDrones(unittest.TestCase):
 
     def test_atomic_concept_count(self):
         atomic = [
-            c for c in self.on.concepts.values()
+            c
+            for c in self.on.concepts.values()
             if isinstance(c, AtomicConcept) and c not in (OWL_THING, OWL_NOTHING)
         ]
         self.assertEqual(len(atomic), 9)
@@ -308,23 +318,29 @@ class TestParseOwlDrones(unittest.TestCase):
 # TestParseOwlInline — domain/range/disjoint/functional/intersection/OWL_NOTHING
 # ---------------------------------------------------------------------------
 
-class TestParseOwlInline(unittest.TestCase):
 
+class TestParseOwlInline(unittest.TestCase):
     def test_simple_concept_inclusion(self):
-        on = _make_ontology(_PREFIXES + """
+        on = _make_ontology(
+            _PREFIXES
+            + """
 :A rdf:type owl:Class .
 :B rdf:type owl:Class .
 :A rdfs:subClassOf :B .
-""")
+"""
+        )
         axioms = [ax for ax in on.axioms if isinstance(ax, ConceptInclusion)]
         self.assertTrue(any(ax.sub.id == "a" and ax.sup.id == "b" for ax in axioms))
 
     def test_disjoint_generates_negated_sup(self):
-        on = _make_ontology(_PREFIXES + """
+        on = _make_ontology(
+            _PREFIXES
+            + """
 :A rdf:type owl:Class .
 :B rdf:type owl:Class .
 :A owl:disjointWith :B .
-""")
+"""
+        )
         axioms = [ax for ax in on.axioms if isinstance(ax, ConceptInclusion)]
         neg_sups = [ax for ax in axioms if isinstance(ax.sup, NegatedConcept)]
         self.assertTrue(any(ax.sub.id == "a" for ax in neg_sups))
@@ -333,11 +349,14 @@ class TestParseOwlInline(unittest.TestCase):
                 self.assertEqual(ax.sup.concept.id, "b")
 
     def test_domain_generates_existential_inclusion(self):
-        on = _make_ontology(_PREFIXES + """
+        on = _make_ontology(
+            _PREFIXES
+            + """
 :A rdf:type owl:Class .
 :R rdf:type owl:ObjectProperty .
 :R rdfs:domain :A .
-""")
+"""
+        )
         found = any(
             isinstance(ax, ConceptInclusion)
             and isinstance(ax.sub, ExistentialConcept)
@@ -348,11 +367,14 @@ class TestParseOwlInline(unittest.TestCase):
         self.assertTrue(found, "Expected ∃R ⊑ A from rdfs:domain")
 
     def test_range_generates_inverse_existential_inclusion(self):
-        on = _make_ontology(_PREFIXES + """
+        on = _make_ontology(
+            _PREFIXES
+            + """
 :B rdf:type owl:Class .
 :R rdf:type owl:ObjectProperty .
 :R rdfs:range :B .
-""")
+"""
+        )
         found = any(
             isinstance(ax, ConceptInclusion)
             and isinstance(ax.sub, InverseExistentialConcept)
@@ -363,55 +385,72 @@ class TestParseOwlInline(unittest.TestCase):
         self.assertTrue(found, "Expected ∃R⁻ ⊑ B from rdfs:range")
 
     def test_functional_property(self):
-        on = _make_ontology(_PREFIXES + """
+        on = _make_ontology(
+            _PREFIXES
+            + """
 :R rdf:type owl:ObjectProperty .
 :R rdf:type owl:FunctionalProperty .
-""")
+"""
+        )
         funcs = [ax for ax in on.axioms if isinstance(ax, FunctionalRole)]
         self.assertEqual(len(funcs), 1)
         self.assertEqual(funcs[0].role.id, "r")
 
     def test_inverse_functional_property(self):
-        on = _make_ontology(_PREFIXES + """
+        on = _make_ontology(
+            _PREFIXES
+            + """
 :R rdf:type owl:ObjectProperty .
 :R rdf:type owl:InverseFunctionalProperty .
-""")
+"""
+        )
         inv_funcs = [ax for ax in on.axioms if isinstance(ax, InverseFunctionalRole)]
         self.assertEqual(len(inv_funcs), 1)
         self.assertEqual(inv_funcs[0].role.id, "r")
 
     def test_role_inclusion(self):
-        on = _make_ontology(_PREFIXES + """
+        on = _make_ontology(
+            _PREFIXES
+            + """
 :R rdf:type owl:ObjectProperty .
 :S rdf:type owl:ObjectProperty .
 :R rdfs:subPropertyOf :S .
-""")
+"""
+        )
         ri = [ax for ax in on.axioms if isinstance(ax, RoleInclusion)]
         self.assertTrue(any(ax.sub.id == "r" and ax.sup.id == "s" for ax in ri))
 
     def test_role_inclusion_with_inverse(self):
-        on = _make_ontology(_PREFIXES + """
+        on = _make_ontology(
+            _PREFIXES
+            + """
 :R rdf:type owl:ObjectProperty .
 :S rdf:type owl:ObjectProperty .
 :R rdfs:subPropertyOf [ owl:inverseOf :S ] .
-""")
+"""
+        )
         ri = [ax for ax in on.axioms if isinstance(ax, RoleInclusion)]
         inv_sups = [ax for ax in ri if isinstance(ax.sup, InverseRole)]
         self.assertTrue(
             any(ax.sub.id == "r" and ax.sup.id == "inv_s" for ax in inv_sups),
-            "Expected RoleInclusion R ⊑ S⁻ from [owl:inverseOf :S]"
+            "Expected RoleInclusion R ⊑ S⁻ from [owl:inverseOf :S]",
         )
 
     def test_intersection_sub_concept(self):
-        on = _make_ontology(_PREFIXES + """
+        on = _make_ontology(
+            _PREFIXES
+            + """
 :A rdf:type owl:Class .
 :B rdf:type owl:Class .
 :C rdf:type owl:Class .
 [ rdf:type owl:Class ; owl:intersectionOf ( :A :B ) ] rdfs:subClassOf :C .
-""")
+"""
+        )
         inter_axioms = [
-            ax for ax in on.axioms
-            if isinstance(ax, ConceptInclusion) and isinstance(ax.sub, IntersectionConcept)
+            ax
+            for ax in on.axioms
+            if isinstance(ax, ConceptInclusion)
+            and isinstance(ax.sub, IntersectionConcept)
         ]
         self.assertEqual(len(inter_axioms), 1)
         ax = inter_axioms[0]
@@ -420,22 +459,29 @@ class TestParseOwlInline(unittest.TestCase):
         self.assertEqual(ax.sup.id, "c")
 
     def test_owl_nothing_sup(self):
-        on = _make_ontology(_PREFIXES + """
+        on = _make_ontology(
+            _PREFIXES
+            + """
 :A rdf:type owl:Class .
 :A rdfs:subClassOf owl:Nothing .
-""")
+"""
+        )
         nothing_axioms = [
-            ax for ax in on.axioms
+            ax
+            for ax in on.axioms
             if isinstance(ax, ConceptInclusion) and ax.sup is OWL_NOTHING
         ]
         self.assertEqual(len(nothing_axioms), 1)
         self.assertEqual(nothing_axioms[0].sub.id, "a")
 
     def test_unsupported_construct_generates_warning(self):
-        on = _make_ontology(_PREFIXES + """
+        on = _make_ontology(
+            _PREFIXES
+            + """
 :R rdf:type owl:ObjectProperty .
 :R rdf:type owl:TransitiveProperty .
-""")
+"""
+        )
         self.assertFalse(on.is_supported)
         self.assertTrue(any("owl:TransitiveProperty" in w for w in on.warnings))
 
@@ -444,14 +490,17 @@ class TestParseOwlInline(unittest.TestCase):
 # TestSaturateRoleInclusions
 # ---------------------------------------------------------------------------
 
-class TestSaturateRoleInclusions(unittest.TestCase):
 
+class TestSaturateRoleInclusions(unittest.TestCase):
     def _make_role_ontology(self, sub_iri: str, sup_iri: str) -> Ontology:
-        return _make_ontology(_PREFIXES + f"""
+        return _make_ontology(
+            _PREFIXES
+            + f"""
 :{sub_iri} rdf:type owl:ObjectProperty .
 :{sup_iri} rdf:type owl:ObjectProperty .
 :{sub_iri} rdfs:subPropertyOf :{sup_iri} .
-""")
+"""
+        )
 
     def test_saturation_derives_three_axioms(self):
         on = self._make_role_ontology("R", "P")
@@ -465,8 +514,10 @@ class TestSaturateRoleInclusions(unittest.TestCase):
         saturate_role_inclusions(on)
         found = any(
             isinstance(ax, ConceptInclusion)
-            and isinstance(ax.sub, ExistentialConcept) and ax.sub.role.id == "r"
-            and isinstance(ax.sup, ExistentialConcept) and ax.sup.role.id == "p"
+            and isinstance(ax.sub, ExistentialConcept)
+            and ax.sub.role.id == "r"
+            and isinstance(ax.sup, ExistentialConcept)
+            and ax.sup.role.id == "p"
             for ax in on.axioms
         )
         self.assertTrue(found, "Expected ∃R ⊑ ∃P after saturation")
@@ -476,8 +527,10 @@ class TestSaturateRoleInclusions(unittest.TestCase):
         saturate_role_inclusions(on)
         found = any(
             isinstance(ax, ConceptInclusion)
-            and isinstance(ax.sub, InverseExistentialConcept) and ax.sub.role.id == "r"
-            and isinstance(ax.sup, InverseExistentialConcept) and ax.sup.role.id == "p"
+            and isinstance(ax.sub, InverseExistentialConcept)
+            and ax.sub.role.id == "r"
+            and isinstance(ax.sup, InverseExistentialConcept)
+            and ax.sup.role.id == "p"
             for ax in on.axioms
         )
         self.assertTrue(found, "Expected ∃R⁻ ⊑ ∃P⁻ after saturation")
@@ -487,8 +540,10 @@ class TestSaturateRoleInclusions(unittest.TestCase):
         saturate_role_inclusions(on)
         found = any(
             isinstance(ax, RoleInclusion)
-            and isinstance(ax.sub, InverseRole) and ax.sub.role.id == "r"
-            and isinstance(ax.sup, InverseRole) and ax.sup.role.id == "p"
+            and isinstance(ax.sub, InverseRole)
+            and ax.sub.role.id == "r"
+            and isinstance(ax.sup, InverseRole)
+            and ax.sup.role.id == "p"
             for ax in on.axioms
         )
         self.assertTrue(found, "Expected R⁻ ⊑ P⁻ after saturation")
@@ -498,7 +553,9 @@ class TestSaturateRoleInclusions(unittest.TestCase):
         saturate_role_inclusions(on)
         count_after_first = len(on.axioms)
         saturate_role_inclusions(on)
-        self.assertEqual(len(on.axioms), count_after_first, "Saturation should be idempotent")
+        self.assertEqual(
+            len(on.axioms), count_after_first, "Saturation should be idempotent"
+        )
 
     def test_drones_saturation(self):
         on = parse_owl(str(_DRONES_OWL))
@@ -506,8 +563,10 @@ class TestSaturateRoleInclusions(unittest.TestCase):
         # veryclose ⊑ near should produce ∃veryclose ⊑ ∃near, ∃vc⁻ ⊑ ∃near⁻, vc⁻ ⊑ near⁻
         found = any(
             isinstance(ax, ConceptInclusion)
-            and isinstance(ax.sub, ExistentialConcept) and ax.sub.role.id == "veryclose"
-            and isinstance(ax.sup, ExistentialConcept) and ax.sup.role.id == "near"
+            and isinstance(ax.sub, ExistentialConcept)
+            and ax.sub.role.id == "veryclose"
+            and isinstance(ax.sup, ExistentialConcept)
+            and ax.sup.role.id == "near"
             for ax in on.axioms
         )
         self.assertTrue(found, "Expected ∃veryclose ⊑ ∃near after saturation of drones")
@@ -517,35 +576,45 @@ class TestSaturateRoleInclusions(unittest.TestCase):
 # TestPrioritizedUpdate
 # ---------------------------------------------------------------------------
 
-class TestPrioritizedUpdate(unittest.TestCase):
 
+class TestPrioritizedUpdate(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.robot_on = parse_owl(str(_ROBOT_OWL))
         saturate_role_inclusions(cls.robot_on)
-        cls.robot_rules = build_rules_for_prioritized_coherence_update_semantics(cls.robot_on)
+        cls.robot_rules = build_rules_for_prioritized_coherence_update_semantics(
+            cls.robot_on
+        )
 
     def test_robot_rule_count(self):
         self.assertEqual(len(self.robot_rules), 250)
 
     def test_trigger_rules_present(self):
         # Rule 1: AOrApCl_X(X) :- X(X) for some concept
-        trigger = [r for r in self.robot_rules if r.startswith("AOrApCl_") and " :- " in r]
+        trigger = [
+            r for r in self.robot_rules if r.startswith("AOrApCl_") and " :- " in r
+        ]
         self.assertGreater(len(trigger), 0)
 
     def test_deletion_trigger_rules_present(self):
         # Rule 5: DelCl_X(X) :- del_X_request(X)
-        del_trigger = [r for r in self.robot_rules if r.startswith("DelCl_") and "request" in r]
+        del_trigger = [
+            r for r in self.robot_rules if r.startswith("DelCl_") and "request" in r
+        ]
         self.assertGreater(len(del_trigger), 0)
 
     def test_actual_deletion_rules_present(self):
         # Rule 17: del_X(X) :- X(X), DelCl_X(X)
-        del_rules = [r for r in self.robot_rules if r.startswith("del_") and "DelCl_" in r]
+        del_rules = [
+            r for r in self.robot_rules if r.startswith("del_") and "DelCl_" in r
+        ]
         self.assertGreater(len(del_rules), 0)
 
     def test_actual_insertion_rules_present(self):
         # Rule 21: ins_X(X) :- -X(X), InsCl_X(X)
-        ins_rules = [r for r in self.robot_rules if r.startswith("ins_") and "InsCl_" in r]
+        ins_rules = [
+            r for r in self.robot_rules if r.startswith("ins_") and "InsCl_" in r
+        ]
         self.assertGreater(len(ins_rules), 0)
 
     def test_no_role_rules_for_robot(self):
@@ -571,7 +640,8 @@ class TestPrioritizedUpdate(unittest.TestCase):
     def test_incompatibility_rules_for_direct_clash(self):
         # Rule 16: incompatible_update() :- ApCl_X(X), del_X_request(X)
         incompat = [
-            r for r in self.robot_rules
+            r
+            for r in self.robot_rules
             if r.startswith("incompatible_update()") and "del_" in r and "request" in r
         ]
         self.assertGreater(len(incompat), 0)
@@ -581,29 +651,38 @@ class TestPrioritizedUpdate(unittest.TestCase):
         # robotConj has 4 such axioms; verify no propagation rule for a negated sup
         # (negated concepts themselves are not "positive" concepts and won't appear in rule LHS)
         prop_rules = [
-            r for r in self.robot_rules
+            r
+            for r in self.robot_rules
             if r.startswith("AOrApCl_not_") or r.startswith("ApCl_not_")
         ]
         self.assertEqual(len(prop_rules), 0)
 
     def test_role_ontology_generates_binary_rules(self):
-        on = _make_ontology(_PREFIXES + """
+        on = _make_ontology(
+            _PREFIXES
+            + """
 :A rdf:type owl:Class .
 :B rdf:type owl:Class .
 :R rdf:type owl:ObjectProperty .
 :R rdfs:domain :A .
 :R rdfs:range :B .
-""")
+"""
+        )
         saturate_role_inclusions(on)
         rules = build_rules_for_prioritized_coherence_update_semantics(on)
         binary = [r for r in rules if "(X,Y)" in r]
-        self.assertGreater(len(binary), 0, "Expected binary (role) rules for ontology with R")
+        self.assertGreater(
+            len(binary), 0, "Expected binary (role) rules for ontology with R"
+        )
 
     def test_functional_role_generates_functional_rules(self):
-        on = _make_ontology(_PREFIXES + """
+        on = _make_ontology(
+            _PREFIXES
+            + """
 :R rdf:type owl:ObjectProperty .
 :R rdf:type owl:FunctionalProperty .
-""")
+"""
+        )
         saturate_role_inclusions(on)
         rules = build_rules_for_prioritized_coherence_update_semantics(on)
         # Rules 8-9: functional role conflict
@@ -611,41 +690,56 @@ class TestPrioritizedUpdate(unittest.TestCase):
         self.assertEqual(len(func_rules), 2)
 
     def test_owl_nothing_generates_incompatibility(self):
-        on = _make_ontology(_PREFIXES + """
+        on = _make_ontology(
+            _PREFIXES
+            + """
 :A rdf:type owl:Class .
 :A rdfs:subClassOf owl:Nothing .
-""")
-        saturate_role_inclusions(on)
-        rules = build_rules_for_prioritized_coherence_update_semantics(on)
-        incompat = [r for r in rules if r.startswith("incompatible_update()") and "ApCl_a" in r]
-        self.assertGreater(len(incompat), 0, "Expected incompatibility rule for A ⊑ ⊥")
-
-    def test_conjunction_bottom_incompatibility(self):
-        on = _make_ontology(_PREFIXES + """
-:A rdf:type owl:Class .
-:B rdf:type owl:Class .
-[ rdf:type owl:Class ; owl:intersectionOf ( :A :B ) ] rdfs:subClassOf owl:Nothing .
-""")
+"""
+        )
         saturate_role_inclusions(on)
         rules = build_rules_for_prioritized_coherence_update_semantics(on)
         incompat = [
-            r for r in rules
+            r for r in rules if r.startswith("incompatible_update()") and "ApCl_a" in r
+        ]
+        self.assertGreater(len(incompat), 0, "Expected incompatibility rule for A ⊑ ⊥")
+
+    def test_conjunction_bottom_incompatibility(self):
+        on = _make_ontology(
+            _PREFIXES
+            + """
+:A rdf:type owl:Class .
+:B rdf:type owl:Class .
+[ rdf:type owl:Class ; owl:intersectionOf ( :A :B ) ] rdfs:subClassOf owl:Nothing .
+"""
+        )
+        saturate_role_inclusions(on)
+        rules = build_rules_for_prioritized_coherence_update_semantics(on)
+        incompat = [
+            r
+            for r in rules
             if r.startswith("incompatible_update()") and "ApCl_a" in r and "ApCl_b" in r
         ]
-        self.assertGreater(len(incompat), 0, "Expected incompatibility rule for A ⊓ B ⊑ ⊥")
+        self.assertGreater(
+            len(incompat), 0, "Expected incompatibility rule for A ⊓ B ⊑ ⊥"
+        )
 
     def test_negative_role_inclusion_generates_deletion_rules(self):
-        on = _make_ontology(_PREFIXES + """
+        on = _make_ontology(
+            _PREFIXES
+            + """
 :R rdf:type owl:ObjectProperty .
 :S rdf:type owl:ObjectProperty .
 :R owl:disjointWith :S .
-""")
+"""
+        )
         # owl:disjointWith on properties is not directly supported; test via NegatedRole axiom
         # directly instead, by constructing it programmatically
         r = AtomicRole("http://test.org/r")
         s = AtomicRole("http://test.org/s")
-        from owl.expressions import NegatedRole
         from owl.axioms import RoleInclusion
+        from owl.expressions import NegatedRole
+
         on2 = Ontology(iri="http://test.org/")
         on2.roles[r.id] = r
         on2.roles[s.id] = s
@@ -656,7 +750,8 @@ class TestPrioritizedUpdate(unittest.TestCase):
         on2.axioms.append(RoleInclusion(r, NegatedRole(s)))
         rules = build_rules_for_prioritized_coherence_update_semantics(on2)
         neg_role_rules = [
-            r_str for r_str in rules
+            r_str
+            for r_str in rules
             if "DelCl_s(X,Y)" in r_str and "ApCl_r(X,Y)" in r_str
         ]
         self.assertGreater(len(neg_role_rules), 0, "Expected DelCl rule from R ⊑ ¬S")

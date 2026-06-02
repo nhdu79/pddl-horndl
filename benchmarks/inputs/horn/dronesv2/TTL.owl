@@ -1,0 +1,137 @@
+@prefix : <http://www.semanticweb.org/anon/ontologies/2025/6/dronesv2/> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@base <http://www.semanticweb.org/anon/ontologies/2025/6/dronesv2> .
+
+<http://www.semanticweb.org/anon/ontologies/2025/6/dronesv2> rdf:type owl:Ontology .
+
+
+#################################################################
+#    Object Properties — base roles
+#################################################################
+
+###  Base spatial roles (symmetric; veryClose is more specific than near)
+:near rdf:type owl:ObjectProperty , owl:SymmetricProperty .
+
+:veryClose rdf:type owl:ObjectProperty ;
+           rdfs:subPropertyOf :near ;
+           rdf:type owl:SymmetricProperty .
+
+###  Base environment role
+:environment rdf:type owl:ObjectProperty .
+
+
+#################################################################
+#    Object Properties — sub-roles (replace qualified someValuesFrom)
+#
+#    Each sub-role encodes the filler qualification that DL-Lite Horn
+#    forbids inside someValuesFrom.  The sub-role inclusions are valid
+#    Horn DL-Lite role inclusions and are used by Clipper for UCQ rewriting.
+#
+#    Chain: environmentRain ⊑ environmentLow ⊑ environment
+#    Chain: nearObject ⊑ near,  nearMoving ⊑ near
+#    Chain: veryCloseObject ⊑ veryClose ⊑ near
+#################################################################
+
+###  environmentLow ⊑ environment  — "environment that has LowVisibility"
+:environmentLow rdf:type owl:ObjectProperty ;
+                rdfs:subPropertyOf :environment .
+
+###  environmentRain ⊑ environmentLow  — "environment that has Rain ⊑ LowVisibility"
+:environmentRain rdf:type owl:ObjectProperty ;
+                 rdfs:subPropertyOf :environmentLow .
+
+###  nearObject ⊑ near  — "near an Objectx"
+:nearObject rdf:type owl:ObjectProperty ;
+            rdfs:subPropertyOf :near .
+
+###  nearMoving ⊑ near  — "near a MovingObject"
+:nearMoving rdf:type owl:ObjectProperty ;
+            rdfs:subPropertyOf :near .
+
+###  veryCloseObject ⊑ veryClose  — "veryClose to an Objectx"
+:veryCloseObject rdf:type owl:ObjectProperty ;
+                 rdfs:subPropertyOf :veryClose .
+
+
+#################################################################
+#    Classes — concept hierarchy (unchanged from original)
+#################################################################
+
+:Drone rdf:type owl:Class ;
+       rdfs:subClassOf :MovingObject ;
+       owl:disjointWith :Human .
+
+:Human rdf:type owl:Class ;
+       rdfs:subClassOf :MovingObject .
+
+:LowVisibility rdf:type owl:Class .
+
+:MovingObject rdf:type owl:Class ;
+              rdfs:subClassOf :Objectx .
+
+:Objectx rdf:type owl:Class ;
+         owl:disjointWith :Rain .
+
+:Rain rdf:type owl:Class ;
+      rdfs:subClassOf :LowVisibility .
+
+:RiskOfPhysicalDamage rdf:type owl:Class .
+
+:Tree rdf:type owl:Class ;
+      rdfs:subClassOf :Objectx .
+
+:WetDrone rdf:type owl:Class ;
+          rdfs:subClassOf :Drone .
+
+
+#################################################################
+#    General axioms — Horn DL-Lite conjunction on LHS
+#
+#    All someValuesFrom fillers are owl:Thing (unqualified existentials).
+#    The original qualified fillers (LowVisibility, Objectx, MovingObject)
+#    are encoded by the sub-role inclusions above.
+#################################################################
+
+###  Drone ⊓ ∃environmentLow.⊤ ⊓ ∃nearObject.⊤ ⊑ RiskOfPhysicalDamage
+###
+###  A drone in a low-visibility environment that is near any Objectx is at risk.
+###  Exercises: 3-way Horn conjunction + environmentRain→environmentLow sub-role chain.
+[ owl:intersectionOf ( :Drone
+                       [ rdf:type owl:Restriction ;
+                         owl:onProperty :environmentLow ;
+                         owl:someValuesFrom owl:Thing ]
+                       [ rdf:type owl:Restriction ;
+                         owl:onProperty :nearObject ;
+                         owl:someValuesFrom owl:Thing ]
+                     ) ;
+  rdf:type owl:Class ;
+  rdfs:subClassOf :RiskOfPhysicalDamage ] .
+
+
+###  Drone ⊓ ∃nearMoving.⊤ ⊑ RiskOfPhysicalDamage
+###
+###  A drone near any MovingObject (other drone or human) is at risk.
+[ owl:intersectionOf ( :Drone
+                       [ rdf:type owl:Restriction ;
+                         owl:onProperty :nearMoving ;
+                         owl:someValuesFrom owl:Thing ]
+                     ) ;
+  rdf:type owl:Class ;
+  rdfs:subClassOf :RiskOfPhysicalDamage ] .
+
+
+###  Drone ⊓ ∃veryCloseObject.⊤ ⊑ RiskOfPhysicalDamage
+###
+###  A drone very close (orthogonally adjacent) to any Objectx is at risk.
+[ owl:intersectionOf ( :Drone
+                       [ rdf:type owl:Restriction ;
+                         owl:onProperty :veryCloseObject ;
+                         owl:someValuesFrom owl:Thing ]
+                     ) ;
+  rdf:type owl:Class ;
+  rdfs:subClassOf :RiskOfPhysicalDamage ] .
+
+
+###  Generated for dronesv2 Horn DL-Lite benchmark

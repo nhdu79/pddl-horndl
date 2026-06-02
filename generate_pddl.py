@@ -75,11 +75,11 @@ RLS = "code/nemo/t_closure.rls"
 
 ALL_FRAGMENTS = ["core", "horn"]
 ALL_VARIANTS = ["original", "var0", "var1", "var2", "var3"]
-ALL_TASKS = ["blocks", "catOG", "drones", "elevator", "robot", "robotConj", "task", "order", "trip", "tripv2", "assembly"]
+ALL_TASKS = ["blocks", "catOG",  "elevator", "dronesv2", "robot", "robotConj", "task", "order", "trip", "tripv2", "assembly"]
 
 # Tasks that only have inputs for the "horn" fragment.
 # Running them under "core" will fail at input-file lookup.
-HORN_ONLY_TASKS = {"assembly", "drones", "robotConj"}
+HORN_ONLY_TASKS = {"assembly", "dronesv2", "robotConj"}
 
 
 @dataclass(frozen=True)
@@ -98,7 +98,9 @@ VARIANT_CONFIGS: dict[str, Optional[VariantConfig]] = {
 
 TASK_ELEMENTS: dict[str, list[str]] = {
     "catOG": [str(i) for i in range(6, 26)],
-    "drones": [f"{n}-{m}" for n in range(5, 11) for m in range(5, 9)],
+    # Horn-only.  24 instances: N×N grid (N=5..10) with M drones (M=5..8).
+    # Sub-role approach replaces all qualified someValuesFrom with owl:Thing fillers.
+    "dronesv2": [f"{n}-{m}" for n in range(5, 11) for m in range(5, 9)],
     "elevator": [str(i) for i in range(15, 35)],
     "robot": [str(i) for i in range(3, 23)],
     "robotConj": [str(i) for i in range(3, 23)],
@@ -128,6 +130,8 @@ TASK_ELEMENTS: dict[str, list[str]] = {
 def owl_path(fragment: str, task: str, element: str) -> str:
     if task == "assembly":
         return "benchmarks/inputs/horn/assembly/assembly.owl"
+    if task == "dronesv2":
+        return "benchmarks/inputs/horn/dronesv2/TTL.owl"
     prefix = f"benchmarks/inputs/{fragment}/{task}"
     if task == "robot" or task == "robotConj":
         return f"{prefix}/TTL{element}.owl"
@@ -137,24 +141,24 @@ def owl_path(fragment: str, task: str, element: str) -> str:
 def domain_path(fragment: str, task: str, element: str) -> str:
     if task == "assembly":
         return "benchmarks/inputs/horn/assembly/domain.pddl"
+    if task == "dronesv2":
+        return "benchmarks/inputs/horn/dronesv2/drone.pddl"
     prefix = f"benchmarks/inputs/{fragment}/{task}"
     if task == "robot" or task == "robotConj":
         return f"{prefix}/robotDomain{element}.pddl"
-    if task == "drones":
-        return f"{prefix}/drone.pddl"
     return f"{prefix}/domain.pddl"
 
 
 def problem_path(fragment: str, task: str, element: str) -> str:
     if task == "assembly":
         return f"benchmarks/inputs/horn/assembly/probASSEMBLY-{element}.pddl"
+    if task == "dronesv2":
+        return f"benchmarks/inputs/horn/dronesv2/droneProblem{element}.pddl"
     prefix = f"benchmarks/inputs/{fragment}/{task}"
     if task == "blocks":
         return f"{prefix}/probBLOCKS{element}.pddl"
     elif task == "robotConj":
         return f"{prefix}/robotProblem{element}.pddl"
-    elif task == "drones":
-        return f"{prefix}/droneProblem{element}.pddl"
     return f"{prefix}/{task}Problem{element}.pddl"
 
 

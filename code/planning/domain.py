@@ -53,6 +53,8 @@ def wrapper(eff, horn=False):
         new_eff = ConditionalEffect(eff.condition, wrapper(eff.effect, horn=horn))
     elif isinstance(eff, ConjunctiveEffect):
         new_eff = ConjunctiveEffect([wrapper(e, horn=horn) for e in eff.elements])
+    elif isinstance(eff, ForallEffect):
+        new_eff = ForallEffect(eff.parameters, wrapper(eff.effect, horn=horn))
     else:
         raise ValueError("Unknown effect type: %r" % eff)
     return new_eff
