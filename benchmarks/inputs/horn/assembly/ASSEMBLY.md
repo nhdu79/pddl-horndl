@@ -104,9 +104,8 @@ precondition and become installable.
 validation, stratum 3 does not fire, `ProductRecord` for ?p is not preserved, and
 no screen can be reinstalled on ?p (the partner is installable elsewhere but the
 reworked screen needs certify first; reinstalling either on ?p would satisfy
-`HasScreen` but `FullyEquipped` and `Validated` are both gone — `ProductRecord`
-remains unachievable).  Validate first so stratum 3 preserves `ProductRecord`;
-then rework to release the screens.
+`HasScreen` but `Validated` is gone — `ProductRecord`
+remains unachievable). Afterwards validate would add 'Validated' and then imply 'ProductRecord'.
 
 **Stratum 2 — deletion cascades from `Am_FullyEquipped`:**
 

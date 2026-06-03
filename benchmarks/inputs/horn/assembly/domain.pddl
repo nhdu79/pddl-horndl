@@ -69,6 +69,7 @@
     :parameters (?b ?p)
     :precondition (and (mko (ReadyToUse ?b))
                        (Battery ?b)
+                       (forall (?p2) (not (batteryInstalledIn ?b ?p2)))
                        (not (mko (HasBattery ?p))))
     :effect (batteryInstalledIn ?b ?p))
 
@@ -76,6 +77,7 @@
     :parameters (?r ?p)
     :precondition (and (mko (ReadyToUse ?r))
                        (Processor ?r)
+                       (forall (?p2) (not (boardInstalledIn ?r ?p2)))
                        (not (mko (HasBoard ?p))))
     :effect (boardInstalledIn ?r ?p))
 

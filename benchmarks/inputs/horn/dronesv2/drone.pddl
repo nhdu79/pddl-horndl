@@ -39,6 +39,8 @@
     (nearObject ?x ?y)          ; x is near Objectx y                   (⊑ near)
     (nearMoving ?x ?y)          ; x is near MovingObject y              (⊑ near)
     (veryCloseObject ?x ?y)     ; x is veryClose to Objectx y           (⊑ veryClose)
+    (AddPhase)
+    (DelPhase)
 )
 
 
@@ -69,12 +71,49 @@
 ;; Move.  A drone entering an env cell automatically satisfies ∃environmentLow.⊤
 ;; via the existing ABox fact on that cell; a drone leaving an env cell no longer
 ;; satisfies it.
+(:action HandleEnvironmentRain
+  :parameters (?y0 ?y1)
+  :precondition (or (not (auxUpdating)) (not auxUpdating2))
+  :effect (and
+    (when (and (environment ?y0 ?y1) (Rain ?y1))
+      (and (environmentRain ?y0 ?y1) (auxUpdating))
+    )
+    (when (and (environmentRain ?y0 ?y1) (not (and (environment ?y0 ?y1) (Rain ?y1))))
+      (and (not (environmentRain ?y0 ?y1)) (auxUpdating))
+    )
+  )
+)
+
+(:action AddEnvironmentLow
+  :parameters (?y0 ?y1)
+  :precondition (and (environment ?y0 ?y1) (mko (LowVisibility ?y1)) (not (auxUpdating)))
+  :effect (and (environmentLow ?y0 ?y1) (auxUpdating))
+)
+
+(:action AddNearObject
+  :parameters (?y0 ?y1)
+  :precondition (and (near ?y0 ?y1) (mko (Objectx ?y1)) (not (auxUpdating)))
+  :effect (and (nearObject ?y0 ?y1) (auxUpdating))
+)
+
+(:action AddNearMoving
+  :parameters (?y0 ?y1)
+  :precondition (and (near ?y0 ?y1) (mko (MovingObject ?y1)) (not (auxUpdating)))
+  :effect (and (nearMoving ?y0 ?y1) (auxUpdating))
+)
+
+(:action AddVeryCloseObject
+  :parameters (?y0 ?1)
+  :precondition (and (veryClose ?y0 ?y1) (mko (Objectx ?y1)) (not (auxUpdating)))
+  :effect (and (veryCloseObject ?y0 ?y1) (auxUpdating))
+)
 
 (:action Move
     :parameters (?x ?y)
     :precondition (and
         (mko (and (Drone ?x) (veryClose ?x ?y)))
         (not (mko (Objectx ?y)))
+        (auxUpdating)
     )
     :effect (and
 
@@ -83,6 +122,7 @@
             (and (not (Drone ?x)) (Drone ?y)))
         (when (mko (WetDrone ?x))
             (and (not (WetDrone ?x)) (not (Drone ?x)) (WetDrone ?y)))
+        (not (auxUpdating))
 
         ;; ── nearObject: ?x vacated (no longer Objectx); ?y occupied (now Objectx)
         (forall (?z) (when (near ?z ?x)      (not (nearObject ?z ?x))))

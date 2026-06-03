@@ -1,3 +1,10 @@
+- Mb change name of benchmark to phone?
+- [ ] Inverse role functional for *InstalledIn
+- [ ] Problem use (for all ?p (and (Phone ?P) (ProductRecord ?P)))
+- [ ] Filter reachability for predicate after rule generation!
+
+=========================
+
 (nonHornAuxRainyEnvironment ?x ?y)
 (nonHornAuxLowVisibilityEnvironment ?x ?y)
 (nonHornAuxNearMovingObject ?x ?y)
@@ -11,7 +18,7 @@
 (:derived (nonHornAuxNearMovingObject ?y0 ?y1)
           (exists (?y0 ?y1 - object) (and (near ?y0 ?y1) (MovingObject ?y1))))
 (:derived (nonHornAuxNearObjectX ?y0 ?y1)
-          (exists (?y0 ?y1 - object) (and (near ?y0 ?y1) (Objectx ?y1))))
+          (exists (?y0 ?y1 - object) (and (near ?y0 ?y1) (mko Objectx ?y1))))
 (:derived (nonHornAuxVeryCloseObjectX ?y0 ?y1)
           (exists (?y0 ?y1 - object) (and (veryClose ?y0 ?y1) (Objectx ?y1))))
 

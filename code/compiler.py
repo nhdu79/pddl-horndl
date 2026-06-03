@@ -540,8 +540,8 @@ def compile_pddl(
     if verbose:
         compiler.print_compilation_information()
 
-    domain.constants = problem.objects
-    problem.objects = None
+    # domain.constants = problem.objects
+    # problem.objects = None
     with open(out_domain, "w") as f:
         f.write(str(domain))
     with open(out_problem, "w") as f:
