@@ -44,19 +44,16 @@
 
 ###  nearObject ⊑ near  — "near an Objectx"
 :nearObject rdf:type owl:ObjectProperty ;
-            rdfs:subPropertyOf :near ;
-            rdf:type owl:SymmetricProperty .
+            rdfs:subPropertyOf :near .
 
 ###  nearMoving ⊑ near  — "near a MovingObject"
 :nearMoving rdf:type owl:ObjectProperty ;
-            rdfs:subPropertyOf :near ;
-            rdf:type owl:SymmetricProperty .
+            rdfs:subPropertyOf :near .
 
 
 ###  veryCloseObject ⊑ veryClose  — "veryClose to an Objectx"
 :veryCloseObject rdf:type owl:ObjectProperty ;
-                 rdfs:subPropertyOf :veryClose ;
-                 rdf:type owl:SymmetricProperty .
+                 rdfs:subPropertyOf :veryClose .
 
 
 #################################################################

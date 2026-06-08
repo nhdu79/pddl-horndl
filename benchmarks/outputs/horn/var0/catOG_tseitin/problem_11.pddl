@@ -1,5 +1,7 @@
 (define (problem BTcat_problem)
 (:domain BTcat)
+(:objects
+  a b c d e f g h i j k l m n o p q r s t u v - object)
 (:init
        (cat e)
        (bomb f)
@@ -19,5 +21,5 @@
        (contains i h)
        (contains b u)
        (contains a v))
-(:goal (and (forall (?x - object) (AUX15 ?x)) (not (updating))))
+(:goal (and (forall (?x - object) (AUX17 ?x)) (not (updating))))
 )

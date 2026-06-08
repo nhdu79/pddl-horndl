@@ -1,5 +1,7 @@
 (define (problem taskAssigment_problem)
 (:domain taskAssigment)
+(:objects
+  a b c d e f - object)
 (:init
        (engineer a)
        (developer b)

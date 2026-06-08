@@ -75,11 +75,11 @@ RLS = "code/nemo/t_closure.rls"
 
 ALL_FRAGMENTS = ["core", "horn"]
 ALL_VARIANTS = ["original", "var0", "var1", "var2", "var3"]
-ALL_TASKS = ["blocks", "catOG",  "elevator", "dronesv2", "robot", "robotConj", "task", "order", "trip", "tripv2", "assembly"]
+ALL_TASKS = ["blocks", "catOG",  "elevator", "dronesv2", "robot", "robotConj", "task", "order", "trip", "tripv2", "phone_assembly"]
 
 # Tasks that only have inputs for the "horn" fragment.
 # Running them under "core" will fail at input-file lookup.
-HORN_ONLY_TASKS = {"assembly", "dronesv2", "robotConj"}
+HORN_ONLY_TASKS = {"phone_assembly", "dronesv2", "robotConj"}
 
 
 @dataclass(frozen=True)
@@ -110,15 +110,11 @@ TASK_ELEMENTS: dict[str, list[str]] = {
     "order": [ "4", "5", "6", "7", "10", "15", "20", "25", "30", "35", "40", "45", "50", "55", "60" ],
     "trip": [ "4", "5", "6", "7", "10", "15", "20", "25", "30", "35", "40", "45", "50", "55", "60" ],
     "tripv2": [ "4", "5", "6", "7", "10", "15", "20", "25", "30", "35", "40", "45", "50", "55", "60" ],
-    # Horn-only.  Two variants:
-    #   var0 (N=1..5): clean start, goal = FullyEquipped
-    #   var1 (N=2..6): rework + quality-record: odd phones fully assembled but not
-    #                  validated; even phones empty; optimal plan validates odd phones
-    #                  first so stratum 3 preserves ProductRecord on rework;
-    #                  goal = ProductRecord
-    "assembly": [
-        "1-0", "2-0", "2-1", "3-0", "3-1", "4-0", "4-1", "5-0", "5-1", "6-1",
-    ],
+    # Horn-only.  Mixed scenario: ceil(N/2) broken phones (fully assembled,
+    #   under warranty, hasBrokenComponent) + floor(N/2) incomplete phones
+    #   (nothing installed).  Goal = FullyEquipped for all phones, plus
+    #   Repaired ∧ WarrantyClaim for phones under warranty.
+    "phone_assembly": ["1-0", "2-0", "3-0", "4-0", "5-0", "6-0", "7-0", "8-0", "9-0", "10-0"],
 }
 
 
@@ -128,8 +124,8 @@ TASK_ELEMENTS: dict[str, list[str]] = {
 
 
 def owl_path(fragment: str, task: str, element: str) -> str:
-    if task == "assembly":
-        return "benchmarks/inputs/horn/assembly/assembly.owl"
+    if task == "phone_assembly":
+        return "benchmarks/inputs/horn/phone_assembly/assembly.owl"
     if task == "dronesv2":
         return "benchmarks/inputs/horn/dronesv2/TTL.owl"
     prefix = f"benchmarks/inputs/{fragment}/{task}"
@@ -139,8 +135,8 @@ def owl_path(fragment: str, task: str, element: str) -> str:
 
 
 def domain_path(fragment: str, task: str, element: str) -> str:
-    if task == "assembly":
-        return "benchmarks/inputs/horn/assembly/domain.pddl"
+    if task == "phone_assembly":
+        return "benchmarks/inputs/horn/phone_assembly/domain.pddl"
     if task == "dronesv2":
         return "benchmarks/inputs/horn/dronesv2/drone.pddl"
     prefix = f"benchmarks/inputs/{fragment}/{task}"
@@ -150,8 +146,8 @@ def domain_path(fragment: str, task: str, element: str) -> str:
 
 
 def problem_path(fragment: str, task: str, element: str) -> str:
-    if task == "assembly":
-        return f"benchmarks/inputs/horn/assembly/probASSEMBLY-{element}.pddl"
+    if task == "phone_assembly":
+        return f"benchmarks/inputs/horn/phone_assembly/probPHONE_ASSEMBLY-{element}.pddl"
     if task == "dronesv2":
         return f"benchmarks/inputs/horn/dronesv2/droneProblem{element}.pddl"
     prefix = f"benchmarks/inputs/{fragment}/{task}"

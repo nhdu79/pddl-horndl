@@ -280,7 +280,7 @@ def generate_problem(n, path):
         "\t(:domain robot)",
         "\t(:objects robot)",
         "\t(:init",
-        f"\t\t(RightOf1 robot)",
+        f"\t\t(RightOf0 robot)",
         f"\t\t(LeftOf{n - 1} robot)",
         f"\t\t(AboveOf0 robot)",
         f"\t\t(BelowOf{n - 1} robot)",

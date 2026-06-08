@@ -1,4 +1,5 @@
 import os
+import re
 import shutil
 import subprocess
 import tempfile
@@ -7,6 +8,14 @@ from abc import ABC, abstractmethod
 
 from coherence_update.classes.inclusion import INCLUSION_TYPES_ORDER
 from coherence_update.classes.tbox import TBox
+from coherence_update.prioritized_update import build_rules_for_pus
+from coherence_update.rules.core.atomic import (
+    build_insert_and_delete_rules_and_incompatible_update_for_atomic_concepts,
+    build_insert_and_delete_rules_and_incompatible_update_for_atomic_roles,
+    build_updating_rules_for_atomic_concepts,
+    build_updating_rules_for_atomic_roles,
+)
+from coherence_update.rules.core.negative import atomicA_closure, roleP_closure
 from coherence_update.rules.horn.strata import (
     build_actual_deletion_rules_for_concepts,
     build_actual_deletion_rules_for_roles,
@@ -24,21 +33,22 @@ from coherence_update.rules.horn.strata import (
     build_updating_rules_for_concepts,
     build_updating_rules_for_roles,
 )
-from coherence_update.rules.core.atomic import (
-    build_insert_and_delete_rules_and_incompatible_update_for_atomic_concepts,
-    build_insert_and_delete_rules_and_incompatible_update_for_atomic_roles,
-    build_updating_rules_for_atomic_concepts,
-    build_updating_rules_for_atomic_roles,
+from coherence_update.rules.symbols import (
+    ADEL,
+    APLUS,
+    COMPATIBLE_UPDATE,
+    INCOMPATIBLE_UPDATE,
+    NOT,
+    RULE_SEPARATOR,
 )
-from coherence_update.rules.core.negative import atomicA_closure, roleP_closure
-from coherence_update.rules.symbols import COMPATIBLE_UPDATE, INCOMPATIBLE_UPDATE
 from coherence_update.update import CoherenceUpdate
-from coherence_update.prioritized_update import build_rules_for_pus
 from compilation.variant_options import (
     INCOMPATIBLE_UPDATE_PREDICATE_TYPES,
     UPDATING_PREDICATE_TYPES,
 )
 from owl import (
+    OWL_NOTHING,
+    OWL_THING,
     AtomicConcept,
     AtomicRole,
     ExistentialConcept,
@@ -46,19 +56,22 @@ from owl import (
     InverseExistentialConcept,
     InverseFunctionalRole,
     InverseRole,
-    OWL_NOTHING,
-    OWL_THING,
     normalize_negative_concept_inclusions,
     parse_owl,
     saturate_role_inclusions,
 )
 from planning.datalog import Equality, Negated
 from planning.logic import (
+    AddEffect,
     And,
     Comparison,
+    ConditionalEffect,
+    ConjunctiveEffect,
+    DelEffect,
     DerivedPredicate,
     Fact,
     Forall,
+    ForallEffect,
     Or,
     Predicate,
     SimpleFExpression,
@@ -68,6 +81,17 @@ from utils.functions import get_repr, read_predicates, read_unary_predicate
 
 TMP_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "tmp")
 RULES_FILE_NAME = "_update_rules.txt"
+
+
+def _collect_effect_predicates(effect, result: set) -> None:
+    """Recursively collect all Fact predicate names from an effect tree."""
+    if isinstance(effect, (AddEffect, DelEffect)):
+        result.add(effect.fact.predicate)
+    elif isinstance(effect, ConjunctiveEffect):
+        for e in effect.elements:
+            _collect_effect_predicates(e, result)
+    elif isinstance(effect, (ConditionalEffect, ForallEffect)):
+        _collect_effect_predicates(effect.effect, result)
 
 
 def transform_incompatible_update(rules):
@@ -179,6 +203,13 @@ class UpdateRunner(ABC):
             pddl_predicates ∪ (ontology predicates not already in pddl_predicates)
         """
 
+    @abstractmethod
+    def filter_non_reachable_predicates(self, rules: list, actions: list) -> list:
+        """
+        Return a list of rule that are reachable from the insertion and deletion of action effects based on
+        coherence update semantics
+        """
+
 
 class CoreUpdateRunner(UpdateRunner):
     """DL-Lite Core: TBox computed via Nemo + t_closure.rls."""
@@ -288,6 +319,9 @@ class CoreUpdateRunner(UpdateRunner):
         os.unlink(tmp_rls_path)
         shutil.rmtree(TMP_DIR)
 
+    def filter_non_reachable_predicates(self, rules: list, actions: list) -> list:
+        return rules
+
 
 class HornUpdateRunner(UpdateRunner):
     """DL-Lite Horn: TBox built directly from the OWL ontology via the Python parser."""
@@ -302,7 +336,9 @@ class HornUpdateRunner(UpdateRunner):
         include_updating = (
             self.updating_pred_type == UPDATING_PREDICATE_TYPES["derived_predicate"]
         )
-        return build_rules_for_pus(self.ontology, include_updating_rules=include_updating)
+        return build_rules_for_pus(
+            self.ontology, include_updating_rules=include_updating
+        )
 
     def run_for_missing_predicates(self, missing_concepts, missing_roles):
         # Wrap plain names as expression objects so the strata functions can use them.
@@ -326,8 +362,12 @@ class HornUpdateRunner(UpdateRunner):
         rules.extend(build_trigger_rules_for_deletion_roles(all_role_objs))
         for role in all_role_objs:
             rules.extend(build_connnective_rules_for_deletion_role(role))
-        rules.extend(build_incompatibility_rules_for_direct_deletion_concepts(all_concept_objs))
-        rules.extend(build_incompatibility_rules_for_direct_deletion_roles(all_role_objs))
+        rules.extend(
+            build_incompatibility_rules_for_direct_deletion_concepts(all_concept_objs)
+        )
+        rules.extend(
+            build_incompatibility_rules_for_direct_deletion_roles(all_role_objs)
+        )
         rules.extend(build_actual_deletion_rules_for_concepts(all_concept_objs))
         rules.extend(build_actual_deletion_rules_for_roles(all_role_objs))
         # Stratum 3 — insertion closure (rules 20-22; rules 18-19 skipped: no TBox)
@@ -345,9 +385,7 @@ class HornUpdateRunner(UpdateRunner):
         concepts = set(self.ontology.atomic_concepts.keys())
         roles = set(self.ontology.atomic_roles.keys())
         functs = {
-            ax.role.id
-            for ax in self.ontology.axioms
-            if isinstance(ax, FunctionalRole)
+            ax.role.id for ax in self.ontology.axioms if isinstance(ax, FunctionalRole)
         }
         inv_functs = {
             ax.role.id
@@ -366,6 +404,51 @@ class HornUpdateRunner(UpdateRunner):
             if r.id not in pddl_names:
                 extra.append(Predicate(r.id, [TypedList(["?x0", "?x1"])]))
         return list(pddl_predicates) + extra
+
+    def filter_non_reachable_predicates(self, rules: list, actions: list) -> list:
+        # Collect seeds: Ap_* and Am_* predicates set by action effects.
+        kept = set()
+        for action in actions:
+            _collect_effect_predicates(action.effect, kept)
+
+        # Also add base predicate names (strip Ap_/Am_) so that rule 1
+        # (AOrApCl_X :- X) is reachable alongside rule 2 (AOrApCl_X :- Ap_X).
+        extras = set()
+        for pred in kept:
+            if pred.startswith(APLUS):
+                extras.add(pred[len(APLUS) :])
+            elif pred.startswith(ADEL):
+                extras.add(pred[len(ADEL) :])
+        kept |= extras
+
+        kept_rules = []
+        remaining = list(rules)
+        while True:
+            new_heads = set()
+            new_remaining = []
+            for rule_str in remaining:
+                sep_idx = rule_str.find(RULE_SEPARATOR)
+                if sep_idx < 0:
+                    new_remaining.append(rule_str)
+                    continue
+                tail = rule_str[sep_idx + len(RULE_SEPARATOR) :]
+                atoms = re.findall(rf"({re.escape(NOT)}?)([A-Za-z][A-Za-z0-9_]*)\(", tail)
+                positive_names = {name for neg, name in atoms if not neg}
+                if positive_names and positive_names.issubset(kept):
+                    kept_rules.append(rule_str)
+                    head = rule_str[:sep_idx].strip()
+                    paren = head.find("(")
+                    head_name = head[:paren] if paren >= 0 else head
+                    new_heads.add(head_name)
+                else:
+                    new_remaining.append(rule_str)
+            newly_added = new_heads - kept
+            if not newly_added:
+                break
+            kept |= newly_added
+            remaining = new_remaining
+
+        return kept_rules
 
 
 def make_update_runner(

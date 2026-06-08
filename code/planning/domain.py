@@ -37,27 +37,25 @@ from planning.logic import (
 from utils.functions import parse_name
 
 
-def wrapper(eff, horn=False):
-    new_eff = None
+def _rewrite_as_update_requests(eff, horn=False):
     if isinstance(eff, AddEffect):
-        params = eff.fact.parameters
         name = parse_name(eff.fact.predicate)
-        predicate = APLUS + name if horn else INS + name + REQUEST
-        new_eff = AddEffect(Fact(predicate, params))
-    elif isinstance(eff, DelEffect):
-        params = eff.fact.parameters
+        pred = APLUS + name if horn else INS + name + REQUEST
+        return AddEffect(Fact(pred, eff.fact.parameters))
+    if isinstance(eff, DelEffect):
         name = parse_name(eff.fact.predicate)
-        predicate = ADEL + name if horn else DEL + name + REQUEST
-        new_eff = AddEffect(Fact(predicate, params))
-    elif isinstance(eff, ConditionalEffect):
-        new_eff = ConditionalEffect(eff.condition, wrapper(eff.effect, horn=horn))
-    elif isinstance(eff, ConjunctiveEffect):
-        new_eff = ConjunctiveEffect([wrapper(e, horn=horn) for e in eff.elements])
-    elif isinstance(eff, ForallEffect):
-        new_eff = ForallEffect(eff.parameters, wrapper(eff.effect, horn=horn))
-    else:
-        raise ValueError("Unknown effect type: %r" % eff)
-    return new_eff
+        # dnh: Skipping boolean predicate for drones benchmark
+        if is_non_horn_aux_predicate_name(name):
+            return eff
+        pred = ADEL + name if horn else DEL + name + REQUEST
+        return AddEffect(Fact(pred, eff.fact.parameters))
+    if isinstance(eff, ConditionalEffect):
+        return ConditionalEffect(eff.condition, _rewrite_as_update_requests(eff.effect, horn))
+    if isinstance(eff, ConjunctiveEffect):
+        return ConjunctiveEffect([_rewrite_as_update_requests(e, horn) for e in eff.elements])
+    if isinstance(eff, ForallEffect):
+        return ForallEffect(eff.parameters, _rewrite_as_update_requests(eff.effect, horn))
+    raise ValueError(f"Unknown effect type: {eff!r}")
 
 
 class Domain:
@@ -146,9 +144,9 @@ class Domain:
             action.precondition = And([action.precondition, not_updating])
             eff = action.effect
             if up == UPDATING_PREDICATE_TYPES["derived_predicate"]:
-                action.effect = wrapper(eff, horn=horn)
+                action.effect = _rewrite_as_update_requests(eff, horn=horn)
             elif up == UPDATING_PREDICATE_TYPES["action_effect"]:
-                wrapped = wrapper(eff, horn=horn)
+                wrapped = _rewrite_as_update_requests(eff, horn=horn)
                 add_eff = AddEffect(updating)
                 if isinstance(wrapped, ConjunctiveEffect):
                     new_elements = [*wrapped.elements, add_eff]
@@ -213,6 +211,9 @@ class Domain:
         for predicate in predicates:
             # e_addA and e_delA
             p_params = predicate.parameters
+            if len(p_params) == 0:
+                continue
+
             f_params = p_params[0].elements
 
             ins_a = INS + parse_name(predicate.name)

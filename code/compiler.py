@@ -26,9 +26,12 @@ from compilation.variant_options import (
     INCOMPATIBLE_UPDATE_PREDICATE_TYPES,
     UPDATING_PREDICATE_TYPES,
 )
+from owl import EXISTENTIAL_PREFIX, INVERSE_EXISTENTIAL_PREFIX, parse_owl
 from rewriting.clipper import Clipper
 from update_runner import HornUpdateRunner, Timer, make_update_runner, transform_incompatible_update
 from utils.functions import parse_name
+
+TEMPORARY_ONTOLOGY_FILE = "__temp_clipper_ontology.owl"
 
 
 def _parse_datalog_rules(
@@ -148,8 +151,12 @@ class Compiler:
 
             if self.update_runner:
                 with Timer("construct_update_rules", file=self.timer_output):
-                    raw_rules.extend(self.update_runner.run())
-                    raw_rules.extend(self._missing_predicate_rules())
+                    update_rules = self.update_runner.run()
+                    update_rules += self._missing_predicate_rules()
+                    update_rules = self.update_runner.filter_non_reachable_predicates(
+                        update_rules, self.domain.actions
+                    )
+                    raw_rules.extend(update_rules)
 
             with Timer("gen_derived_predicates", file=self.timer_output):
                 self._adapt_predicate_names_to_clipper()
@@ -212,11 +219,13 @@ class Compiler:
 
     def _rewrite_via_clipper(self, queries):
         if self.clipper.supports_simultaneous_rewriting() and queries:
-            return self.clipper.rewrite_all("\n".join("\n".join(qs) for qs in queries))
-        rules = self.clipper.rewrite_ontology()
-        for qs in queries:
-            for q in qs:
-                rules.extend(self.clipper.rewrite_cq(q))
+            rules = self.clipper.rewrite_all("\n".join("\n".join(qs) for qs in queries))
+        else:
+            rules = self.clipper.rewrite_ontology()
+            for qs in queries:
+                for q in qs:
+                    rules.extend(self.clipper.rewrite_cq(q))
+
         return rules
 
     def _missing_predicate_rules(self):
@@ -480,6 +489,61 @@ class Compiler:
             print("")
 
 
+def construct_ontology_for_clipper(ontology_path: str) -> str:
+    """
+    Extends the OWL Turtle ontology with subClassOf axioms for every atomic role P:
+
+        existsP    ⊑  ∃P     (fresh atomic concept is a subclass of the existential on P)
+        existsinvP ⊑  ∃P⁻    (fresh atomic concept is a subclass of the existential on P⁻)
+
+    The fresh concept names match those registered as PDDL predicates by
+    domain._construct_effects_for_update_action() in the Horn update fragment:
+    EXISTENTIAL_PREFIX + role.id  and  INVERSE_EXISTENTIAL_PREFIX + role.id.
+
+    With these axioms in place, Clipper includes existsP(x) and existsinvP(x) as
+    valid witnesses when rewriting queries for ∃P(x) and ∃P⁻(x) respectively —
+    covering the ABox facts maintained by the Horn update action.
+
+    Writes the extended ontology to TEMPORARY_ONTOLOGY_FILE and returns its path.
+    """
+    ontology = parse_owl(ontology_path)
+    with open(ontology_path) as f:
+        original_text = f.read()
+
+    extra: list[str] = []
+    for role in ontology.atomic_roles.values():
+        exists_id    = EXISTENTIAL_PREFIX         + role.id  # e.g. existshasbrokenscreen
+        existsinv_id = INVERSE_EXISTENTIAL_PREFIX + role.id  # e.g. existsinvhasbrokenscreen
+
+        # Derive namespace prefix from the role IRI so fresh concept IRIs share the same namespace.
+        for sep in ("#", "/"):
+            if sep in role.iri:
+                base = role.iri.rsplit(sep, 1)[0] + sep
+                break
+        else:
+            base = ""
+
+        exists_iri    = base + exists_id
+        existsinv_iri = base + existsinv_id
+
+        extra += [
+            f"### {exists_id} ⊑ ∃{role.id}",
+            f"<{exists_iri}> rdf:type owl:Class ;",
+            f"    rdfs:subClassOf [ rdf:type owl:Restriction ; owl:onProperty <{role.iri}> ; owl:someValuesFrom owl:Thing ] .",
+            "",
+            f"### {existsinv_id} ⊑ ∃{role.id}⁻",
+            f"<{existsinv_iri}> rdf:type owl:Class ;",
+            f"    rdfs:subClassOf [ rdf:type owl:Restriction ; owl:onProperty [ owl:inverseOf <{role.iri}> ] ; owl:someValuesFrom owl:Thing ] .",
+            "",
+        ]
+
+    extended = original_text.rstrip() + "\n\n" + "\n".join(extra)
+    with open(TEMPORARY_ONTOLOGY_FILE, "w") as f:
+        f.write(extended)
+
+    return TEMPORARY_ONTOLOGY_FILE
+
+
 def compile_pddl(
     ontology: str,
     in_domain: str,
@@ -501,15 +565,6 @@ def compile_pddl(
     verbose: bool = False,
     debug: bool = False,
 ) -> None:
-    if shutil.which(clipper_path) is None:
-        raise FileNotFoundError(f"Clipper not found: {clipper_path!r}")
-
-    clipper = Clipper(clipper_path, ontology, clipper_mqf, debug)
-
-    with open(in_domain) as f:
-        domain = pddl.parse_domain(f.read())
-    with open(in_problem) as f:
-        problem = pddl.parse_problem(f.read())
 
     do_coherence_update = dl_lite_fragment == "horn" or bool(rls_path and nmo_path)
     update_runner = (
@@ -525,6 +580,16 @@ def compile_pddl(
         if do_coherence_update
         else None
     )
+
+    ontology_file_path = construct_ontology_for_clipper(ontology) if do_coherence_update and dl_lite_fragment == "horn" else ontology
+
+    if shutil.which(clipper_path) is None:
+        raise FileNotFoundError(f"Clipper not found: {clipper_path!r}")
+    clipper = Clipper(clipper_path, ontology_file_path, clipper_mqf, debug)
+    with open(in_domain) as f:
+        domain = pddl.parse_domain(f.read())
+    with open(in_problem) as f:
+        problem = pddl.parse_problem(f.read())
 
     compiler = Compiler(
         domain,

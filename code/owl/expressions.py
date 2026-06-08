@@ -28,9 +28,9 @@ from utils.functions import parse_name
 # by any module that needs to construct or recognise those names.
 # ---------------------------------------------------------------------------
 
-EXISTENTIAL_PREFIX = "exists_"
-INVERSE_EXISTENTIAL_PREFIX = "exists_inv_"
-INVERSE_PREFIX = "inv_"
+EXISTENTIAL_PREFIX = "exists"
+INVERSE_EXISTENTIAL_PREFIX = "existsinv"
+INVERSE_PREFIX = "inv"
 NOT_PREFIX = "not_"
 AND_SEP = "_and_"
 

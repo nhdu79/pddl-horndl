@@ -39,73 +39,55 @@
     (nearObject ?x ?y)          ; x is near Objectx y                   (⊑ near)
     (nearMoving ?x ?y)          ; x is near MovingObject y              (⊑ near)
     (veryCloseObject ?x ?y)     ; x is veryClose to Objectx y           (⊑ veryClose)
-    (AddPhase)
-    (DelPhase)
+    (NonHornAuxUpdate)
 )
 
-
-;; ── Move action ───────────────────────────────────────────────────────────────
-;;
-;; Moves a drone (or WetDrone) from position ?x to adjacent empty position ?y.
-;;
-;; Preconditions:
-;;   • TBox derives Drone(?x) and veryClose(?x,?y)
-;;   • Target ?y must not be occupied by any Objectx (Human, Tree, or other Drone)
-;;
-;; Effects:
-;;   1. Transfer Drone / WetDrone to ?y.
-;;   2. Update sub-role ABox facts that track which cells are near/veryClose to
-;;      a currently-occupied Objectx/MovingObject position:
-;;        - Remove {near,veryClose}Object/nearMoving entries pointing TO ?x
-;;          (drone left ?x; ?x is no longer an Objectx / MovingObject)
-;;        - Add the same entries pointing TO ?y
-;;          (drone arrived at ?y; ?y is now an Objectx / MovingObject)
-;;
-;; Why both `near ?z ?x` and `veryClose ?z ?x` in nearObject/nearMoving effects:
-;;   nearObject/nearMoving ⊑ near, and `near` covers BOTH diagonal (explicit near
-;;   ABox facts) AND orthogonal (via veryClose ⊑ near).  Because both directions of
-;;   near and veryClose are stored in the ABox, the two forall clauses together cover
-;;   all neighbours of ?x and ?y.
-;;
-;; environmentLow and environmentRain are cell properties — they are NOT updated by
-;; Move.  A drone entering an env cell automatically satisfies ∃environmentLow.⊤
-;; via the existing ABox fact on that cell; a drone leaving an env cell no longer
-;; satisfies it.
-(:action HandleEnvironmentRain
-  :parameters (?y0 ?y1)
-  :precondition (or (not (auxUpdating)) (not auxUpdating2))
+(:action _Supplement
+  :parameters ()
+  :precondition (not (NonHornAuxUpdate))
   :effect (and
-    (when (and (environment ?y0 ?y1) (Rain ?y1))
-      (and (environmentRain ?y0 ?y1) (auxUpdating))
+    (forall (?x ?y)
+      (when (and (environment ?x ?y) (Rain ?y)) (environmentRain ?x ?y))
     )
-    (when (and (environmentRain ?y0 ?y1) (not (and (environment ?y0 ?y1) (Rain ?y1))))
-      (and (not (environmentRain ?y0 ?y1)) (auxUpdating))
+
+    (forall (?x ?y)
+      (when (and (environmentRain ?x ?y) (not (Rain ?y))) (not (environmentRain ?x ?y)))
     )
+
+    (forall (?x ?y)
+      (when (and (environment ?x ?y) (mko (LowVisibility ?y))) (environmentLow ?x ?y))
+    )
+
+    (forall (?x ?y)
+      (when (and (environmentLow ?x ?y) (not (mko (LowVisibility ?y)))) (not (environmentLow ?x ?y)))
+    )
+
+    (forall (?x ?y)
+      (when (and (mko (near ?x ?y)) (mko (Objectx ?y))) (nearObject ?x ?y))
+    )
+
+    (forall (?x ?y)
+      (when (and (nearObject ?x ?y) (not (mko (Objectx ?y)))) (not (nearObject ?x ?y)))
+    )
+
+    (forall (?x ?y)
+      (when (and (mko (near ?x ?y)) (mko (MovingObject ?y))) (nearMoving ?x ?y))
+    )
+
+    (forall (?x ?y)
+      (when (and (nearMoving ?x ?y) (not (mko (MovingObject ?y)))) (not (nearMoving ?x ?y)))
+    )
+
+    (forall (?x ?y)
+      (when (and (veryClose ?x ?y) (mko (Objectx ?y))) (veryCloseObject ?x ?y))
+    )
+
+    (forall (?x ?y)
+      (when (and (veryCloseObject ?x ?y) (not (mko (Objectx ?y)))) (not (veryCloseObject ?x ?y)))
+    )
+
+    (NonHornAuxUpdate)
   )
-)
-
-(:action AddEnvironmentLow
-  :parameters (?y0 ?y1)
-  :precondition (and (environment ?y0 ?y1) (mko (LowVisibility ?y1)) (not (auxUpdating)))
-  :effect (and (environmentLow ?y0 ?y1) (auxUpdating))
-)
-
-(:action AddNearObject
-  :parameters (?y0 ?y1)
-  :precondition (and (near ?y0 ?y1) (mko (Objectx ?y1)) (not (auxUpdating)))
-  :effect (and (nearObject ?y0 ?y1) (auxUpdating))
-)
-
-(:action AddNearMoving
-  :parameters (?y0 ?y1)
-  :precondition (and (near ?y0 ?y1) (mko (MovingObject ?y1)) (not (auxUpdating)))
-  :effect (and (nearMoving ?y0 ?y1) (auxUpdating))
-)
-
-(:action AddVeryCloseObject
-  :parameters (?y0 ?1)
-  :precondition (and (veryClose ?y0 ?y1) (mko (Objectx ?y1)) (not (auxUpdating)))
-  :effect (and (veryCloseObject ?y0 ?y1) (auxUpdating))
 )
 
 (:action Move
@@ -113,33 +95,18 @@
     :precondition (and
         (mko (and (Drone ?x) (veryClose ?x ?y)))
         (not (mko (Objectx ?y)))
-        (auxUpdating)
+        (NonHornAuxUpdate)
     )
     :effect (and
 
         ;; ── Transfer drone/wetdrone ───────────────────────────────────────────
         (when (not (mko (WetDrone ?x)))
             (and (not (Drone ?x)) (Drone ?y)))
+
         (when (mko (WetDrone ?x))
             (and (not (WetDrone ?x)) (not (Drone ?x)) (WetDrone ?y)))
-        (not (auxUpdating))
 
-        ;; ── nearObject: ?x vacated (no longer Objectx); ?y occupied (now Objectx)
-        (forall (?z) (when (near ?z ?x)      (not (nearObject ?z ?x))))
-        (forall (?z) (when (veryClose ?z ?x) (not (nearObject ?z ?x))))
-        (forall (?z) (when (near ?z ?y)      (nearObject ?z ?y)))
-        (forall (?z) (when (veryClose ?z ?y) (nearObject ?z ?y)))
-
-        ;; ── nearMoving: same update (MovingObject ⊆ Objectx, drone is MovingObject)
-        (forall (?z) (when (near ?z ?x)      (not (nearMoving ?z ?x))))
-        (forall (?z) (when (veryClose ?z ?x) (not (nearMoving ?z ?x))))
-        (forall (?z) (when (near ?z ?y)      (nearMoving ?z ?y)))
-        (forall (?z) (when (veryClose ?z ?y) (nearMoving ?z ?y)))
-
-        ;; ── veryCloseObject: only veryClose (orthogonal) neighbours
-        (forall (?z) (when (veryClose ?z ?x) (not (veryCloseObject ?z ?x))))
-        (forall (?z) (when (veryClose ?z ?y) (veryCloseObject ?z ?y)))
+        (not (NonHornAuxUpdate))
     )
 )
-
 )

@@ -2,7 +2,7 @@
 	(:domain robot)
 	(:objects robot)
 	(:init
-		(RightOf1 robot)
+		(RightOf0 robot)
 		(LeftOf16 robot)
 		(AboveOf0 robot)
 		(BelowOf16 robot)

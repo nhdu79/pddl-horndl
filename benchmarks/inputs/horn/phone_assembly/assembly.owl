@@ -1,0 +1,159 @@
+@prefix : <http://www.semanticweb.org/anon/ontologies/2025/5/Assembly/> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@base <http://www.semanticweb.org/anon/ontologies/2025/5/Assembly/> .
+
+<http://www.semanticweb.org/anon/ontologies/2025/5/Assembly> rdf:type owl:Ontology .
+
+
+#################################################################
+#    Object Properties
+#
+#    All three roles are functional (each component installed in at most one phone)
+#    AND inverse-functional (each phone holds at most one of each component type).
+#    Each appears only on the LHS (as an inverse existential in a range axiom) —
+#    never on the RHS of any role or concept inclusion, satisfying the DL-Lite
+#    Horn grammar restriction on functional roles.
+#################################################################
+
+### ∃screenInstalledIn⁻ ⊑ HasScreen
+:screenInstalledIn rdf:type owl:ObjectProperty , owl:FunctionalProperty , owl:InverseFunctionalProperty ;
+    rdfs:range :HasScreen .
+
+### ∃batteryInstalledIn⁻ ⊑ HasBattery
+:batteryInstalledIn rdf:type owl:ObjectProperty , owl:FunctionalProperty , owl:InverseFunctionalProperty ;
+    rdfs:range :HasBattery .
+
+### ∃boardInstalledIn⁻ ⊑ HasBoard
+:boardInstalledIn rdf:type owl:ObjectProperty , owl:FunctionalProperty , owl:InverseFunctionalProperty ;
+    rdfs:range :HasBoard .
+
+
+#################################################################
+#    Classes — component types
+#    Screen, Battery, Processor are direct ABox predicates set in the problem
+#    init.  Component is a TBox super-concept derived from the three subclass
+#    axioms below; it is never asserted directly in the ABox.
+#################################################################
+
+:Component rdf:type owl:Class .
+
+###  Screen ⊑ Component,  Battery ⊑ Component,  Processor ⊑ Component
+:Screen    rdf:type owl:Class ; rdfs:subClassOf :Component .
+:Battery   rdf:type owl:Class ; rdfs:subClassOf :Component .
+:Processor rdf:type owl:Class ; rdfs:subClassOf :Component .
+
+
+#################################################################
+#    Classes — assembly status
+#    HasScreen/HasBattery/HasBoard derived via range axioms.
+#    FullyEquipped derived from the three-way conjunction below.
+#################################################################
+
+:HasScreen     rdf:type owl:Class .
+:HasBattery    rdf:type owl:Class .
+:HasBoard      rdf:type owl:Class .
+:FullyEquipped rdf:type owl:Class .
+
+
+#################################################################
+#    Classes — certification status
+#    Inspected and Tested are directly managed by planning actions.
+#    ReadyToUse is conjunction-derived.
+#################################################################
+
+:Inspected  rdf:type owl:Class .
+:Tested     rdf:type owl:Class .
+:ReadyToUse rdf:type owl:Class .
+
+
+#################################################################
+#    General axioms — conjunction on LHS (Horn DL-Lite fragment)
+#
+#    Left-to-right position in intersectionOf encodes Horn update
+#    priority: when the RHS is deleted, the FIRST conjunct that is
+#    not shielded by an insertion request (Ap) is the deletion victim.
+#################################################################
+
+###  HasScreen ⊓ HasBattery ⊓ HasBoard ⊑ FullyEquipped   [HasScreen first]
+###
+###  Three-way conjunction: all three component types are equal peers.
+###  Horn cascade: Am_FullyEquipped + AOrApCl_HasBattery + AOrApCl_HasBoard
+###                → Del_HasScreen (Min picks HasScreen as first non-Ap conjunct).
+###  If HasScreen is shielded (Ap_HasScreen), Min shifts to HasBattery; if both
+###  HasScreen and HasBattery are shielded, Min shifts to HasBoard.
+[ owl:intersectionOf ( :HasScreen :HasBattery :HasBoard ) ;
+  rdf:type owl:Class ;
+  rdfs:subClassOf :FullyEquipped ] .
+
+###  Inspected ⊓ Tested ⊑ ReadyToUse   [Inspected first]
+###
+###  LTR ordering: Ap_Inspected shields Inspected → Tested is the first non-Ap conjunct
+###    → Del_Tested.  Net: component retains Inspected, loses only Tested.
+[ owl:intersectionOf ( :Inspected :Tested ) ;
+  rdf:type owl:Class ;
+  rdfs:subClassOf :ReadyToUse ] .
+
+#################################################################
+#    Object Properties — defect tracking roles (one per component type)
+#
+#    Each role hasBrokenX(?p, ?c) records that phone ?p has a broken component ?c.
+#    All three are functional (≤ 1 broken component of each type per phone) and
+#    inverse-functional (each broken component belongs to at most one phone).
+#    Each appears only on the LHS of a domain axiom — never on the RHS.
+#    At most one of the three roles is asserted per phone in any ABox instance.
+#################################################################
+
+### ∃hasBrokenScreen ⊑ HasDefect
+:hasBrokenScreen rdf:type owl:ObjectProperty , owl:FunctionalProperty , owl:InverseFunctionalProperty ;
+    rdfs:domain :HasDefect .
+
+### ∃hasBrokenBattery ⊑ HasDefect
+:hasBrokenBattery rdf:type owl:ObjectProperty , owl:FunctionalProperty , owl:InverseFunctionalProperty ;
+    rdfs:domain :HasDefect .
+
+### ∃hasBrokenBoard ⊑ HasDefect
+:hasBrokenBoard rdf:type owl:ObjectProperty , owl:FunctionalProperty , owl:InverseFunctionalProperty ;
+    rdfs:domain :HasDefect .
+
+
+#################################################################
+#    Classes — defect and warranty status
+#################################################################
+
+:HasDefect     rdf:type owl:Class .
+:BrokenPhone   rdf:type owl:Class .
+:UnderWarranty rdf:type owl:Class .
+:WarrantyClaim rdf:type owl:Class .
+
+
+#################################################################
+#    General axioms — defect and warranty (Horn DL-Lite)
+#
+#    HasDefect is the first conjunct in both axioms (LTR ordering):
+#    when BrokenPhone or WarrantyClaim is deleted, HasDefect is the
+#    first conjunct selected for deletion by the Min rule.
+#################################################################
+
+###  HasDefect ⊓ FullyEquipped ⊑ BrokenPhone   [HasDefect first]
+###
+###  Stratum 2 cascade (repair action): Am_BrokenPhone + AOrApCl_FullyEquipped
+###    → DelCl_HasDefect (Min = HasDefect)
+###  Then for each of the three domain axioms (k=1 rule):
+###    → DelCl_∃hasBrokenScreen/Battery/Board(?p)
+###    → rule 7: DelCl_hasBrokenX(?p, ?c)
+###    → rule 17: del_hasBrokenX(?p, ?c)   [only fires for the one role in the ABox]
+[ owl:intersectionOf ( :HasDefect :FullyEquipped ) ;
+  rdf:type owl:Class ;
+  rdfs:subClassOf :BrokenPhone ] .
+
+###  HasDefect ⊓ UnderWarranty ⊑ WarrantyClaim   [HasDefect first]
+###
+###  Stratum 3 preservation (var2): when the repair cascade deletes HasDefect
+###  and UnderWarranty still holds, ins_WarrantyClaim explicitly asserts
+###  WarrantyClaim in the ABox — the warranty claim persists after repair.
+###  Fixing a defect does not revoke the customer's right to a warranty claim.
+[ owl:intersectionOf ( :HasDefect :UnderWarranty ) ;
+  rdf:type owl:Class ;
+  rdfs:subClassOf :WarrantyClaim ] .
