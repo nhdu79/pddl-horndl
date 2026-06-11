@@ -7,7 +7,6 @@ from coherence_update.rules.symbols import (
     DEL,
     INCOMPATIBLE_UPDATE,
     INS,
-    INS_CL,
     REQUEST,
     UPDATING,
 )
@@ -15,11 +14,6 @@ from compilation.utils import is_non_horn_aux_predicate_name
 from compilation.variant_options import (
     INCOMPATIBLE_UPDATE_PREDICATE_TYPES,
     UPDATING_PREDICATE_TYPES,
-)
-from owl.expressions import (
-    EXISTENTIAL_PREFIX,
-    INVERSE_EXISTENTIAL_PREFIX,
-    INVERSE_PREFIX,
 )
 from planning.logic import (
     Action,
@@ -32,7 +26,6 @@ from planning.logic import (
     ForallEffect,
     Not,
     Predicate,
-    TypedList,
 )
 from utils.functions import parse_name
 
@@ -50,11 +43,17 @@ def _rewrite_as_update_requests(eff, horn=False):
         pred = ADEL + name if horn else DEL + name + REQUEST
         return AddEffect(Fact(pred, eff.fact.parameters))
     if isinstance(eff, ConditionalEffect):
-        return ConditionalEffect(eff.condition, _rewrite_as_update_requests(eff.effect, horn))
+        return ConditionalEffect(
+            eff.condition, _rewrite_as_update_requests(eff.effect, horn)
+        )
     if isinstance(eff, ConjunctiveEffect):
-        return ConjunctiveEffect([_rewrite_as_update_requests(e, horn) for e in eff.elements])
+        return ConjunctiveEffect(
+            [_rewrite_as_update_requests(e, horn) for e in eff.elements]
+        )
     if isinstance(eff, ForallEffect):
-        return ForallEffect(eff.parameters, _rewrite_as_update_requests(eff.effect, horn))
+        return ForallEffect(
+            eff.parameters, _rewrite_as_update_requests(eff.effect, horn)
+        )
     raise ValueError(f"Unknown effect type: {eff!r}")
 
 
@@ -155,11 +154,11 @@ class Domain:
                     new_eff = ConjunctiveEffect([add_eff, wrapped])
                 action.effect = new_eff
 
-    def construct_update_action(self, up, iupt, horn=False, predicates=None):
+    def construct_update_action(self, up, iupt, horn=False, kept=None):
         """
         Called in compiler.
-        predicates: explicit list of Predicate objects to build update machinery for;
-                    defaults to self.predicates (original PDDL domain predicates only).
+        kept: list of Predicate objects produced by filter_non_reachable_predicates,
+              or None for the Core fragment (no filter).
         """
         action = self._pre_construct_update_action(iupt)
         new_preds = [Predicate(UPDATING, [])]
@@ -169,21 +168,13 @@ class Domain:
         elif iupt == INCOMPATIBLE_UPDATE_PREDICATE_TYPES["compatible_update"]:
             new_preds.append(Predicate(COMPATIBLE_UPDATE, []))
 
-        if predicates is None:
-            predicates = self.predicates
-
-        # Predicates that come from the ontology but were not declared in the
-        # original PDDL domain must be registered in the domain before their
-        # update machinery (ins_X / del_X / …) is built.
-        existing_names = {p.name for p in self.predicates}
-        for p in predicates:
-            if p.name not in existing_names:
-                new_preds.append(p)
-                existing_names.add(p.name)
-
-        elements = self._construct_effects_for_update_action(
-            predicates, new_preds, horn=horn
-        )
+        if horn:
+            elements = self._construct_effects_for_update_action_horn(kept)
+        else:
+            predicates = [
+                p for p in self.predicates if not is_non_horn_aux_predicate_name(p.name)
+            ]
+            elements = self._construct_effects_for_update_action_core(predicates, new_preds)
 
         if up == UPDATING_PREDICATE_TYPES["action_effect"]:
             elements.append(DelEffect(Fact(UPDATING)))
@@ -191,7 +182,8 @@ class Domain:
         effects = ConjunctiveEffect(elements)
         action.effect = effects
         self.actions.append(action)
-        self.predicates.extend(new_preds)
+        existing_names = {p.name for p in self.predicates}
+        self.predicates.extend(p for p in new_preds if p.name not in existing_names)
 
     def _pre_construct_update_action(self, iupt):
         action = Action(ACTION_UPDATE_NAME)
@@ -206,10 +198,10 @@ class Domain:
 
         return action
 
-    def _construct_effects_for_update_action(self, predicates, new_preds, horn=False):
+    def _construct_effects_for_update_action_core(self, predicates, new_preds):
+        """Build update action effects for the Core fragment."""
         elements = []
         for predicate in predicates:
-            # e_addA and e_delA
             p_params = predicate.parameters
             if len(p_params) == 0:
                 continue
@@ -218,100 +210,55 @@ class Domain:
 
             ins_a = INS + parse_name(predicate.name)
             del_a = DEL + parse_name(predicate.name)
-
-            f_add_cond = Fact(ins_a, f_params)
-            f_del_cond = Fact(del_a, f_params)
+            ins_a_request = ins_a + REQUEST
+            del_a_request = del_a + REQUEST
+            ins_a_closure = ins_a + CLOSURE
 
             f = Fact(predicate.name, f_params)
-            add_eff = AddEffect(f)
-            del_eff = DelEffect(f)
-
-            eff_add = ConditionalEffect(f_add_cond, add_eff)
-            eff_del = ConditionalEffect(f_del_cond, del_eff)
-            forall_eff_add = ForallEffect(f_params, eff_add)
-            forall_eff_del = ForallEffect(f_params, eff_del)
-
-            elements.extend([forall_eff_add, forall_eff_del])
-            new_preds.append(Predicate(ins_a, p_params))
-            new_preds.append(Predicate(del_a, p_params))
-
-            # e_del_ins_a_request and e_del_del_a_request
-            p_name = parse_name(predicate.name)
-            if horn:
-                ins_a_request = APLUS + p_name
-                del_a_request = ADEL + p_name
-                ins_a_closure = INS_CL + p_name
-            else:
-                ins_a_request = ins_a + REQUEST
-                del_a_request = del_a + REQUEST
-                ins_a_closure = ins_a + CLOSURE
-
+            f_add_cond = Fact(ins_a, f_params)
+            f_del_cond = Fact(del_a, f_params)
             f_del_ins_cond = Fact(ins_a_request, f_params)
             f_del_del_cond = Fact(del_a_request, f_params)
 
-            del_ins_eff = DelEffect(f_del_ins_cond)
-            del_del_eff = DelEffect(f_del_del_cond)
+            elements.extend([
+                ForallEffect(f_params, ConditionalEffect(f_add_cond, AddEffect(f))),
+                ForallEffect(f_params, ConditionalEffect(f_del_cond, DelEffect(f))),
+                ForallEffect(f_params, ConditionalEffect(f_del_ins_cond, DelEffect(f_del_ins_cond))),
+                ForallEffect(f_params, ConditionalEffect(f_del_del_cond, DelEffect(f_del_del_cond))),
+            ])
+            new_preds.extend([
+                Predicate(ins_a, p_params),
+                Predicate(del_a, p_params),
+                Predicate(ins_a_request, p_params),
+                Predicate(del_a_request, p_params),
+                Predicate(ins_a_closure, p_params),
+            ])
 
-            eff_del_ins = ConditionalEffect(f_del_ins_cond, del_ins_eff)
-            eff_del_del = ConditionalEffect(f_del_del_cond, del_del_eff)
-            forall_eff_del_ins = ForallEffect(f_params, eff_del_ins)
-            forall_eff_del_del = ForallEffect(f_params, eff_del_del)
+        return elements
 
-            elements.extend([forall_eff_del_ins, forall_eff_del_del])
-            new_preds.append(Predicate(ins_a_request, p_params))
-            new_preds.append(Predicate(del_a_request, p_params))
-            new_preds.append(Predicate(ins_a_closure, p_params))
+    def _construct_effects_for_update_action_horn(self, kept):
+        """Build update action effects for the Horn fragment."""
+        elements = []
+        for pred in kept:
+            p_params = pred.parameters
+            if len(p_params) == 0:
+                continue
+            f_params = p_params[0].elements
+            f_pred = Fact(pred.name, f_params)
 
-            # Horn fragment: for each binary predicate P also generate effects for
-            # the three derived expressions: inv_P (binary), exists_P and
-            # exists_inv_P (both unary).  Names are built directly (no parse_name)
-            # because the underscore is load-bearing in the Horn Datalog rules.
-            if horn and len(f_params) == 2:
-                derived = [
-                    (INVERSE_PREFIX + predicate.name, ["?x0", "?x1"]),
-                    (EXISTENTIAL_PREFIX + predicate.name, ["?x0"]),
-                    (INVERSE_EXISTENTIAL_PREFIX + predicate.name, ["?x0"]),
-                ]
-                for derived_name, d_vars in derived:
-                    d_params = [TypedList(d_vars)]
-                    ins_d = INS + derived_name
-                    del_d = DEL + derived_name
-                    ins_d_req = APLUS + derived_name
-                    del_d_req = ADEL + derived_name
-
-                    f_d = Fact(derived_name, d_vars)
-                    f_ins_d = Fact(ins_d, d_vars)
-                    f_del_d = Fact(del_d, d_vars)
-                    f_ins_d_req = Fact(ins_d_req, d_vars)
-                    f_del_d_req = Fact(del_d_req, d_vars)
-
-                    elements.extend(
-                        [
-                            ForallEffect(
-                                d_vars, ConditionalEffect(f_ins_d, AddEffect(f_d))
-                            ),
-                            ForallEffect(
-                                d_vars, ConditionalEffect(f_del_d, DelEffect(f_d))
-                            ),
-                            ForallEffect(
-                                d_vars,
-                                ConditionalEffect(f_ins_d_req, DelEffect(f_ins_d_req)),
-                            ),
-                            ForallEffect(
-                                d_vars,
-                                ConditionalEffect(f_del_d_req, DelEffect(f_del_d_req)),
-                            ),
-                        ]
-                    )
-                    new_preds.extend(
-                        [
-                            Predicate(derived_name, d_params),
-                            Predicate(ins_d, d_params),
-                            Predicate(del_d, d_params),
-                            Predicate(ins_d_req, d_params),
-                            Predicate(del_d_req, d_params),
-                            Predicate(INS_CL + derived_name, d_params),
-                        ]
-                    )
+            if pred.name.startswith(INS):
+                base_name = pred.name[len(INS):]
+                elements.append(
+                    ForallEffect(f_params, ConditionalEffect(f_pred, AddEffect(Fact(base_name, f_params))))
+                )
+            elif pred.name.startswith(DEL):
+                base_name = pred.name[len(DEL):]
+                elements.append(
+                    ForallEffect(f_params, ConditionalEffect(f_pred, DelEffect(Fact(base_name, f_params))))
+                )
+            elif pred.name.startswith(APLUS) or pred.name.startswith(ADEL):
+                elements.append(
+                    ForallEffect(f_params, ConditionalEffect(f_pred, DelEffect(f_pred)))
+                )
 
         return elements

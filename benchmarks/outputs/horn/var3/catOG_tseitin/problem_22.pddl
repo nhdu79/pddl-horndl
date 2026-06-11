@@ -41,5 +41,5 @@
        (contains ad ak)
        (contains ai ao)
        (contains bn bd))
-(:goal (and (forall (?x - object) (AUX17 ?x)) (not (updating))))
+(:goal (and (forall (?x - object) (AUX5 ?x)) (not (updating))))
 )

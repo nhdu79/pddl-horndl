@@ -43,12 +43,12 @@ python3 generate_pddl.py --all-fragments --all-variants --all-tasks
 bash test.sh
 
 # Manual single compilation — no coherence update (original semantics)
-PYTHONPATH=code python3 code/compiler.py <ontology.owl> <domain.pddl> <problem.pddl> \
+PYTHONPATH=code python3 -m compilation <ontology.owl> <domain.pddl> <problem.pddl> \
   -d out_domain.pddl -p out_problem.pddl \
   --clipper /path/to/clipper.sh --clipper-mqf
 
 # With coherence update — core fragment (uses Nemo)
-PYTHONPATH=code python3 code/compiler.py <ontology.owl> <domain.pddl> <problem.pddl> \
+PYTHONPATH=code python3 -m compilation <ontology.owl> <domain.pddl> <problem.pddl> \
   -d out_domain.pddl -p out_problem.pddl \
   --clipper /path/to/clipper.sh --clipper-mqf \
   --dl-lite-fragment core \
@@ -57,7 +57,7 @@ PYTHONPATH=code python3 code/compiler.py <ontology.owl> <domain.pddl> <problem.p
   --incompatible-update-pred-type incompatible_update
 
 # With coherence update — horn fragment (uses Python OWL parser, no Nemo needed)
-PYTHONPATH=code python3 code/compiler.py <ontology.owl> <domain.pddl> <problem.pddl> \
+PYTHONPATH=code python3 -m compilation <ontology.owl> <domain.pddl> <problem.pddl> \
   -d out_domain.pddl -p out_problem.pddl \
   --clipper /path/to/clipper.sh --clipper-mqf \
   --dl-lite-fragment horn \
@@ -89,15 +89,18 @@ Output goes to `benchmarks/outputs/<fragment>/<variant>/<task>_no_tseitin/` and 
 
 ```
 code/
-├── compiler.py              # compile_pddl() public function + Compiler class (full pipeline)
-├── update_runner.py         # UpdateRunner: calls Nemo, builds update Datalog rules; Timer utility
 ├── planning/
 │   ├── pddl.py              # PDDL parser + AST nodes (Domain, Problem, actions, derived predicates, logic)
 │   ├── domain.py            # Domain class (adjust_actions, construct_update_action)
 │   ├── problem.py           # Problem class (extend_for_coherence_update)
 │   ├── logic.py             # Logic AST: And, Or, Not, Forall, Exists, Fact, Comparison, etc.
 │   └── datalog.py           # Datalog AST: Rule, Atom, Negated, Equality; parse_rule()
-├── compilation/
+├── compilation/             # Full compilation pipeline (entry point: python3 -m compilation)
+│   ├── __init__.py          # compile_pddl() public function
+│   ├── __main__.py          # CLI entry point
+│   ├── pipeline.py          # Compiler class (full pipeline)
+│   ├── datalog.py           # Datalog rule parsing, deduplication, and filtering helpers
+│   ├── ontology.py          # construct_ontology_for_clipper() — extends OWL for Horn fragment
 │   ├── ucq_collector.py     # UCQCollector: walks PDDL AST, extracts UCQs, replaces with primed query facts
 │   ├── query_rewriter.py    # Query rewriting utilities
 │   ├── utils.py             # Predicate naming conventions (prime_, query_, is_update_, etc.)
@@ -118,8 +121,17 @@ code/
 │   └── saturation.py        # saturate_role_inclusions(): derives ∃R⊑∃P, ∃R⁻⊑∃P⁻, R⁻⊑P⁻
 │                            #   from every R⊑P in the TBox (one-pass, in-place)
 ├── coherence_update/
+│   ├── __init__.py          # Re-exports Timer, UpdateRunner, CoreUpdateRunner, HornUpdateRunner,
+│   │                        #   make_update_runner, transform_incompatible_update
+│   ├── timer.py             # Timer context manager (used across compilation and rewriting)
+│   ├── transform.py         # transform_incompatible_update(), ensure_pddl_parameter()
 │   ├── update.py            # CoherenceUpdate: builds inclusion-type update rules from TBox
-│   ├── prioritized_update.py# (in progress) Horn DL-Lite prioritized update builder
+│   ├── prioritized_update.py# Horn DL-Lite prioritized update builder (build_rules_for_pus)
+│   ├── runners/             # UpdateRunner classes
+│   │   ├── __init__.py      # make_update_runner() factory + re-exports
+│   │   ├── base.py          # UpdateRunner ABC
+│   │   ├── core.py          # CoreUpdateRunner — calls Nemo for DL-Lite Core TBox closure
+│   │   └── horn.py          # HornUpdateRunner — builds rules from OWL directly; filter_non_reachable_predicates
 │   ├── classes/
 │   │   ├── inclusion.py     # Inclusion dataclass + INCLUSION_TYPES_ORDER
 │   │   └── tbox.py          # TBox class

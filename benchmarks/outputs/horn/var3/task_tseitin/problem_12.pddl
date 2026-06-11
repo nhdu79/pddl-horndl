@@ -10,5 +10,5 @@
        (designer f)
        (developer h)
        (engineer k))
-(:goal (and (AUX34) (not (updating))))
+(:goal (and (AUX9) (not (updating))))
 )

@@ -5,17 +5,23 @@ Generator for the Phone Assembly benchmark (Horn DL-Lite fragment).
 Produces 10 problem instances (probPHONE_ASSEMBLY-{N}-0.pddl, N=1..10).
 
 ceil(N/2) broken phones  (phone_1 … phone_{ceil(N/2)}):
-    Two components are installed; the third is broken and has been pulled.
-    The broken component type cycles: screen → battery → board → screen → …
+    All three components are physically in the phone; the broken one is tracked
+    by hasBrokenX(phone_i, comp_i).  The broken component type cycles:
+    screen → battery → processor → screen → …
     The faulty component is NOT typed as Screen/Battery/Processor, so it cannot
     be inspected or installed.
-    hasBrokenX(phone_i, comp_i) tracks the defect; via ∃hasBrokenX ⊑ HasDefect
-    this derives HasDefect.  A spare component spare_X_i is available (uninstalled,
-    typed as the working type).  All broken phones are under warranty.
-    Plan: inspect(spare) → test(spare) → install-X(spare, phone)
-          → authorize-repair(phone) → repair(phone)   [5 steps]
-    authorize-repair is only applicable once FullyEquipped holds again (spare
-    installed), which is why it depends on the certification + install actions.
+    BOTH hasBrokenX AND XInstalledIn are in the init ABox so that HasX is derived,
+    FullyEquipped holds, and BrokenPhone is derivable from the initial state.
+    hasBrokenX drives HasDefect; HasDefect ⊓ FullyEquipped drives BrokenPhone.
+    A spare component spare_X_i is available (uninstalled, typed as the working
+    type).  All broken phones are under warranty.
+    Plan: authorize-repair(phone) → repair(phone)
+          → inspect(spare) → test(spare) → install-X(spare, phone)   [5 steps]
+    repair fires Am_BrokenPhone AND Am_XInstalledIn(broken_comp, phone) together
+    (via conditional effects), so both hasBrokenX and XInstalledIn(broken, phone)
+    are deleted.  This clears HasX, unblocking install-X.  The authorize/repair
+    pair and the inspect/test pair are mutually independent and can be freely
+    interleaved, but both must complete before install-X.
 
 floor(N/2) incomplete phones  (phone_{ceil(N/2)+1} … phone_N):
     No components installed, no warranty.
@@ -23,16 +29,19 @@ floor(N/2) incomplete phones  (phone_{ceil(N/2)+1} … phone_N):
 
 Derived in init for each broken phone p (broken-screen case shown):
     HasDefect(p)     via ∃hasBrokenScreen ⊑ HasDefect
+    HasScreen(p)     via ∃screenInstalledIn⁻ ⊑ HasScreen  (screenInstalledIn in ABox)
     HasBattery(p)    via ∃batteryInstalledIn⁻ ⊑ HasBattery
-    HasBoard(p)      via ∃boardInstalledIn⁻ ⊑ HasBoard
-    (HasScreen and FullyEquipped are NOT yet derivable — no screen installed)
-    (BrokenPhone not yet derivable — FullyEquipped absent)
+    HasProcessor(p)  via ∃processorInstalledIn⁻ ⊑ HasProcessor
+    FullyEquipped(p) via HasScreen ⊓ HasBattery ⊓ HasProcessor ⊑ FullyEquipped
+    BrokenPhone(p)   via HasDefect ⊓ FullyEquipped ⊑ BrokenPhone
 
 Goal:
     ∀p. Phone(p) → FullyEquipped(p)
-                 ∧ (UnderWarranty(p) → Repaired(p) ∧ WarrantyClaim(p))
+                 ∧ (UnderWarranty(p) → ¬HasDefect(p) ∧ WarrantyClaim(p))
 
 Scaling (n_broken = ceil(N/2), n_incomplete = floor(N/2)):
+    broken phone: 5 steps  (authorize-repair + repair + inspect + test + install-X)
+    incomplete phone: 9 steps  (inspect + test + install × 3 components)
     N= 1:  1 broken,  0 incomplete  — minimal plan:  5 steps
     N= 2:  1 broken,  1 incomplete  — minimal plan: 14 steps
     N= 3:  2 broken,  1 incomplete  — minimal plan: 19 steps
@@ -53,11 +62,12 @@ _GOAL = """\
 (forall (?p) (or (not (Phone ?p))
                  (and (MKO (FullyEquipped ?p))
                       (or (not (UnderWarranty ?p))
-                          (and (Repaired ?p) (MKO (WarrantyClaim ?p)))))))\
+                          (and (not (MKO (HasDefect ?p)))
+                               (MKO (WarrantyClaim ?p)))))))\
 """
 
-# Broken component type cycles: screen → battery → board → screen → …
-_BROKEN_TYPES = ["screen", "battery", "board"]
+# Broken component type cycles: screen → battery → processor → screen → …
+_BROKEN_TYPES = ["screen", "battery", "processor"]
 
 
 def _broken_type(i: int) -> str:
@@ -73,14 +83,14 @@ def objects_block(n: int) -> str:
     for i in range(1, n_broken + 1):
         bt = _broken_type(i)
         if bt == "screen":
-            components += [f"screen_{i}", f"spare_screen_{i}", f"battery_{i}", f"board_{i}"]
+            components += [f"screen_{i}", f"spare_screen_{i}", f"battery_{i}", f"processor_{i}"]
         elif bt == "battery":
-            components += [f"screen_{i}", f"battery_{i}", f"spare_battery_{i}", f"board_{i}"]
-        else:  # board
-            components += [f"screen_{i}", f"battery_{i}", f"board_{i}", f"spare_board_{i}"]
+            components += [f"screen_{i}", f"battery_{i}", f"spare_battery_{i}", f"processor_{i}"]
+        else:  # processor
+            components += [f"screen_{i}", f"battery_{i}", f"processor_{i}", f"spare_processor_{i}"]
 
     for i in range(n_broken + 1, n + 1):
-        components += [f"screen_{i}", f"battery_{i}", f"board_{i}"]
+        components += [f"screen_{i}", f"battery_{i}", f"processor_{i}"]
 
     all_objs = phones + components
     return "(:objects " + " ".join(all_objs) + " )"
@@ -99,37 +109,46 @@ def gen_instance(n: int) -> str:
         init_facts.append(f"(UnderWarranty phone_{i})")
 
         if bt == "screen":
-            # Broken screen: battery + board installed; screen pulled.
-            # spare_screen_i is the uncertified replacement waiting to be installed.
+            # Broken screen: all three components physically in phone.
+            # screenInstalledIn(screen_i, phone_i) + hasBrokenScreen → HasScreen +
+            # HasDefect → FullyEquipped → BrokenPhone derivable from init.
+            # spare_screen_i is the uncertified replacement.
             init_facts += [
                 f"(hasBrokenScreen phone_{i} screen_{i})",
+                f"(screenInstalledIn screen_{i} phone_{i})",
                 f"(Battery battery_{i})",
                 f"(batteryInstalledIn battery_{i} phone_{i})",
-                f"(Processor board_{i})",
-                f"(boardInstalledIn board_{i} phone_{i})",
+                f"(Processor processor_{i})",
+                f"(processorInstalledIn processor_{i} phone_{i})",
                 f"(Screen spare_screen_{i})",
             ]
         elif bt == "battery":
-            # Broken battery: screen + board installed; battery pulled.
-            # spare_battery_i is the uncertified replacement waiting to be installed.
+            # Broken battery: all three components physically in phone.
+            # batteryInstalledIn(battery_i, phone_i) + hasBrokenBattery → HasBattery +
+            # HasDefect → FullyEquipped → BrokenPhone derivable from init.
+            # spare_battery_i is the uncertified replacement.
             init_facts += [
                 f"(Screen screen_{i})",
                 f"(screenInstalledIn screen_{i} phone_{i})",
                 f"(hasBrokenBattery phone_{i} battery_{i})",
-                f"(Processor board_{i})",
-                f"(boardInstalledIn board_{i} phone_{i})",
+                f"(batteryInstalledIn battery_{i} phone_{i})",
+                f"(Processor processor_{i})",
+                f"(processorInstalledIn processor_{i} phone_{i})",
                 f"(Battery spare_battery_{i})",
             ]
-        else:  # board
-            # Broken board: screen + battery installed; board pulled.
-            # spare_board_i is the uncertified replacement waiting to be installed.
+        else:  # processor
+            # Broken processor: all three components physically in phone.
+            # processorInstalledIn(processor_i, phone_i) + hasBrokenProcessor → HasProcessor +
+            # HasDefect → FullyEquipped → BrokenPhone derivable from init.
+            # spare_processor_i is the uncertified replacement.
             init_facts += [
                 f"(Screen screen_{i})",
                 f"(screenInstalledIn screen_{i} phone_{i})",
                 f"(Battery battery_{i})",
                 f"(batteryInstalledIn battery_{i} phone_{i})",
-                f"(hasBrokenBoard phone_{i} board_{i})",
-                f"(Processor spare_board_{i})",
+                f"(hasBrokenProcessor phone_{i} processor_{i})",
+                f"(processorInstalledIn processor_{i} phone_{i})",
+                f"(Processor spare_processor_{i})",
             ]
 
     # Incomplete phones: components present but not installed, no warranty.
@@ -137,7 +156,7 @@ def gen_instance(n: int) -> str:
         init_facts += [
             f"(Screen screen_{i})",
             f"(Battery battery_{i})",
-            f"(Processor board_{i})",
+            f"(Processor processor_{i})",
         ]
 
     init_str = "\n ".join(init_facts)

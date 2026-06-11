@@ -25,9 +25,9 @@
 :batteryInstalledIn rdf:type owl:ObjectProperty , owl:FunctionalProperty , owl:InverseFunctionalProperty ;
     rdfs:range :HasBattery .
 
-### ∃boardInstalledIn⁻ ⊑ HasBoard
-:boardInstalledIn rdf:type owl:ObjectProperty , owl:FunctionalProperty , owl:InverseFunctionalProperty ;
-    rdfs:range :HasBoard .
+### ∃processorInstalledIn⁻ ⊑ HasProcessor
+:processorInstalledIn rdf:type owl:ObjectProperty , owl:FunctionalProperty , owl:InverseFunctionalProperty ;
+    rdfs:range :HasProcessor .
 
 
 #################################################################
@@ -47,13 +47,13 @@
 
 #################################################################
 #    Classes — assembly status
-#    HasScreen/HasBattery/HasBoard derived via range axioms.
+#    HasScreen/HasBattery/HasProcessor derived via range axioms.
 #    FullyEquipped derived from the three-way conjunction below.
 #################################################################
 
 :HasScreen     rdf:type owl:Class .
 :HasBattery    rdf:type owl:Class .
-:HasBoard      rdf:type owl:Class .
+:HasProcessor  rdf:type owl:Class .
 :FullyEquipped rdf:type owl:Class .
 
 
@@ -76,14 +76,14 @@
 #    not shielded by an insertion request (Ap) is the deletion victim.
 #################################################################
 
-###  HasScreen ⊓ HasBattery ⊓ HasBoard ⊑ FullyEquipped   [HasScreen first]
+###  HasScreen ⊓ HasBattery ⊓ HasProcessor ⊑ FullyEquipped   [HasScreen first]
 ###
 ###  Three-way conjunction: all three component types are equal peers.
-###  Horn cascade: Am_FullyEquipped + AOrApCl_HasBattery + AOrApCl_HasBoard
+###  Horn cascade: Am_FullyEquipped + AOrApCl_HasBattery + AOrApCl_HasProcessor
 ###                → Del_HasScreen (Min picks HasScreen as first non-Ap conjunct).
 ###  If HasScreen is shielded (Ap_HasScreen), Min shifts to HasBattery; if both
-###  HasScreen and HasBattery are shielded, Min shifts to HasBoard.
-[ owl:intersectionOf ( :HasScreen :HasBattery :HasBoard ) ;
+###  HasScreen and HasBattery are shielded, Min shifts to HasProcessor.
+[ owl:intersectionOf ( :HasScreen :HasBattery :HasProcessor ) ;
   rdf:type owl:Class ;
   rdfs:subClassOf :FullyEquipped ] .
 
@@ -113,8 +113,8 @@
 :hasBrokenBattery rdf:type owl:ObjectProperty , owl:FunctionalProperty , owl:InverseFunctionalProperty ;
     rdfs:domain :HasDefect .
 
-### ∃hasBrokenBoard ⊑ HasDefect
-:hasBrokenBoard rdf:type owl:ObjectProperty , owl:FunctionalProperty , owl:InverseFunctionalProperty ;
+### ∃hasBrokenProcessor ⊑ HasDefect
+:hasBrokenProcessor rdf:type owl:ObjectProperty , owl:FunctionalProperty , owl:InverseFunctionalProperty ;
     rdfs:domain :HasDefect .
 
 
@@ -141,7 +141,7 @@
 ###  Stratum 2 cascade (repair action): Am_BrokenPhone + AOrApCl_FullyEquipped
 ###    → DelCl_HasDefect (Min = HasDefect)
 ###  Then for each of the three domain axioms (k=1 rule):
-###    → DelCl_∃hasBrokenScreen/Battery/Board(?p)
+###    → DelCl_∃hasBrokenScreen/Battery/Processor(?p)
 ###    → rule 7: DelCl_hasBrokenX(?p, ?c)
 ###    → rule 17: del_hasBrokenX(?p, ?c)   [only fires for the one role in the ABox]
 [ owl:intersectionOf ( :HasDefect :FullyEquipped ) ;

@@ -9,9 +9,9 @@ from typing import Optional
 
 # Allow direct imports from code/ without setting PYTHONPATH externally.
 sys.path.insert(0, str(Path(__file__).resolve().parent / "code"))
-from code.compiler import compile_pddl  # noqa: E402
-from code.rewriting.new_tseitin import tseitin_pddl  # noqa: E402
-from code.utils.parser_wrapper import validate_pddl  # noqa: E402
+from compilation import compile_pddl  # noqa: E402
+from rewriting.new_tseitin import tseitin_pddl  # noqa: E402
+from utils.parser_wrapper import validate_pddl  # noqa: E402
 
 # ──────────────────────────────────────────────────────────────────────────────
 # External tool paths — first existing candidate is used automatically
@@ -73,9 +73,11 @@ RLS = "code/nemo/t_closure.rls"
 # Benchmark configuration
 # ──────────────────────────────────────────────────────────────────────────────
 
-ALL_FRAGMENTS = ["core", "horn"]
-ALL_VARIANTS = ["original", "var0", "var1", "var2", "var3"]
-ALL_TASKS = ["blocks", "catOG",  "elevator", "dronesv2", "robot", "robotConj", "task", "order", "trip", "tripv2", "phone_assembly"]
+# "original" is a no-update fragment (plain compilation, no coherence update).
+# "core" and "horn" are update fragments that must be paired with a variant.
+ALL_FRAGMENTS = ["original", "core", "horn"]
+ALL_VARIANTS = ["var0", "var1", "var2", "var3"]
+ALL_TASKS = ["blocks", "catOG", "elevator", "dronesv2", "robot", "robotConj", "task", "order", "trip", "tripv2", "phone_assembly"]
 
 # Tasks that only have inputs for the "horn" fragment.
 # Running them under "core" will fail at input-file lookup.
@@ -88,8 +90,7 @@ class VariantConfig:
     incompatible_update_pred_type: str
 
 
-VARIANT_CONFIGS: dict[str, Optional[VariantConfig]] = {
-    "original": None,  # no update flags
+VARIANT_CONFIGS: dict[str, VariantConfig] = {
     "var0": VariantConfig("derived_predicate", "incompatible_update"),
     "var1": VariantConfig("action_effect", "compatible_update"),
     "var2": VariantConfig("derived_predicate", "compatible_update"),
@@ -105,11 +106,11 @@ TASK_ELEMENTS: dict[str, list[str]] = {
     "robot": [str(i) for i in range(3, 23)],
     "robotConj": [str(i) for i in range(3, 23)],
     "task": [str(i) for i in range(3, 23)],
-    "blocks": [ "-6-2", "-10-2", "-16-1", "-13-1", "-11-0", "-7-2", "-9-0", "-5-0", "-8-0", "-7-1", "-17-0", "-14-0", "-6-0", "-16-2", "-5-1", "-15-0", "-8-1", "-14-1", "-6-1", "-5-2", "-10-1", "-15-1", "-11-1", "-4-1", "-7-0", "-8-2", "-4-2", "-12-0", "-13-0", "-4-0", "-12-1", "-10-0", "-11-2", "-9-2", "-9-1"],
+    "blocks": ["-6-2", "-10-2", "-16-1", "-13-1", "-11-0", "-7-2", "-9-0", "-5-0", "-8-0", "-7-1", "-17-0", "-14-0", "-6-0", "-16-2", "-5-1", "-15-0", "-8-1", "-14-1", "-6-1", "-5-2", "-10-1", "-15-1", "-11-1", "-4-1", "-7-0", "-8-2", "-4-2", "-12-0", "-13-0", "-4-0", "-12-1", "-10-0", "-11-2", "-9-2", "-9-1"],
     # order, trip, tripv2 share the same element list:
-    "order": [ "4", "5", "6", "7", "10", "15", "20", "25", "30", "35", "40", "45", "50", "55", "60" ],
-    "trip": [ "4", "5", "6", "7", "10", "15", "20", "25", "30", "35", "40", "45", "50", "55", "60" ],
-    "tripv2": [ "4", "5", "6", "7", "10", "15", "20", "25", "30", "35", "40", "45", "50", "55", "60" ],
+    "order": ["4", "5", "6", "7", "10", "15", "20", "25", "30", "35", "40", "45", "50", "55", "60"],
+    "trip": ["4", "5", "6", "7", "10", "15", "20", "25", "30", "35", "40", "45", "50", "55", "60"],
+    "tripv2": ["4", "5", "6", "7", "10", "15", "20", "25", "30", "35", "40", "45", "50", "55", "60"],
     # Horn-only.  Mixed scenario: ceil(N/2) broken phones (fully assembled,
     #   under warranty, hasBrokenComponent) + floor(N/2) incomplete phones
     #   (nothing installed).  Goal = FullyEquipped for all phones, plus
@@ -123,12 +124,20 @@ TASK_ELEMENTS: dict[str, list[str]] = {
 # ──────────────────────────────────────────────────────────────────────────────
 
 
+def _input_fragment(fragment: str) -> str:
+    """Map the output fragment to the input directory fragment.
+
+    "original" shares inputs with "core" (same PDDL files, no update machinery).
+    """
+    return "core" if fragment == "original" else fragment
+
+
 def owl_path(fragment: str, task: str, element: str) -> str:
     if task == "phone_assembly":
         return "benchmarks/inputs/horn/phone_assembly/assembly.owl"
     if task == "dronesv2":
         return "benchmarks/inputs/horn/dronesv2/TTL.owl"
-    prefix = f"benchmarks/inputs/{fragment}/{task}"
+    prefix = f"benchmarks/inputs/{_input_fragment(fragment)}/{task}"
     if task == "robot" or task == "robotConj":
         return f"{prefix}/TTL{element}.owl"
     return f"{prefix}/TTL.owl" if task != "blocks" else f"{prefix}/blocks.owl"
@@ -139,7 +148,7 @@ def domain_path(fragment: str, task: str, element: str) -> str:
         return "benchmarks/inputs/horn/phone_assembly/domain.pddl"
     if task == "dronesv2":
         return "benchmarks/inputs/horn/dronesv2/drone.pddl"
-    prefix = f"benchmarks/inputs/{fragment}/{task}"
+    prefix = f"benchmarks/inputs/{_input_fragment(fragment)}/{task}"
     if task == "robot" or task == "robotConj":
         return f"{prefix}/robotDomain{element}.pddl"
     return f"{prefix}/domain.pddl"
@@ -150,7 +159,7 @@ def problem_path(fragment: str, task: str, element: str) -> str:
         return f"benchmarks/inputs/horn/phone_assembly/probPHONE_ASSEMBLY-{element}.pddl"
     if task == "dronesv2":
         return f"benchmarks/inputs/horn/dronesv2/droneProblem{element}.pddl"
-    prefix = f"benchmarks/inputs/{fragment}/{task}"
+    prefix = f"benchmarks/inputs/{_input_fragment(fragment)}/{task}"
     if task == "blocks":
         return f"{prefix}/probBLOCKS{element}.pddl"
     elif task == "robotConj":
@@ -159,9 +168,12 @@ def problem_path(fragment: str, task: str, element: str) -> str:
 
 
 def output_paths(
-    fragment: str, variant: str, task: str, element: str
+    fragment: str, variant: Optional[str], task: str, element: str
 ) -> tuple[str, str, str, str]:
-    base = f"benchmarks/outputs/{fragment}/{variant}/{task}"
+    base = f"benchmarks/outputs/{fragment}"
+    if variant:
+        base += f"/{variant}"
+    base += f"/{task}"
     return (
         f"{base}_no_tseitin/domain_{element}.pddl",
         f"{base}_no_tseitin/problem_{element}.pddl",
@@ -177,7 +189,7 @@ def output_paths(
 
 def compile_instance(
     fragment: str,
-    variant: str,
+    variant: Optional[str],
     task: str,
     element: str,
 ) -> None:
@@ -192,7 +204,6 @@ def compile_instance(
     for path in (out_domain, out_problem, ts_domain, ts_problem):
         Path(path).parent.mkdir(parents=True, exist_ok=True)
 
-    config = VARIANT_CONFIGS[variant]
     compile_kwargs: dict = dict(
         ontology=owl,
         in_domain=in_domain,
@@ -202,7 +213,8 @@ def compile_instance(
         clipper_path=CLIPPER,
     )
 
-    if config is not None:  # non-original variant: add coherence update args
+    if fragment != "original":
+        config = VARIANT_CONFIGS[variant]
         if fragment == "horn":
             compile_kwargs["dl_lite_fragment"] = "horn"
         else:  # core
@@ -244,6 +256,8 @@ def parse_args() -> tuple[list[str], list[str], list[str]]:
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=(
             f"available fragments: {', '.join(ALL_FRAGMENTS)}\n"
+            f"  'original' compiles without coherence update (no variant required).\n"
+            f"  'core' and 'horn' apply coherence update and must be paired with a variant.\n"
             f"available variants:  {', '.join(ALL_VARIANTS)}\n"
             f"available tasks:     {', '.join(ALL_TASKS)}\n"
         ),
@@ -264,7 +278,7 @@ def parse_args() -> tuple[list[str], list[str], list[str]]:
         metavar="VARIANT",
         default=["var0"],
         choices=ALL_VARIANTS,
-        help="variants to run (default: var0)",
+        help="variants to run for core/horn fragments (default: var0); ignored for 'original'",
     )
     parser.add_argument(
         "--tasks",
@@ -283,7 +297,7 @@ def parse_args() -> tuple[list[str], list[str], list[str]]:
     parser.add_argument(
         "--all-variants",
         action="store_true",
-        help=f"run all variants ({', '.join(ALL_VARIANTS)})",
+        help=f"run all variants for core/horn fragments ({', '.join(ALL_VARIANTS)})",
     )
     parser.add_argument(
         "--all-tasks",
@@ -301,10 +315,13 @@ def parse_args() -> tuple[list[str], list[str], list[str]]:
 def main() -> None:
     fragments, variants, tasks = parse_args()
     for fragment in fragments:
-        for variant in variants:
+        # "original" has no update semantics — no variant dimension applies.
+        effective_variants: list[Optional[str]] = [None] if fragment == "original" else variants
+        for variant in effective_variants:
             for task in tasks:
                 for element in TASK_ELEMENTS[task]:
-                    print(f"  [{fragment}/{variant}] {task} / {element}")
+                    label = f"{fragment}/{variant}" if variant else fragment
+                    print(f"  [{label}] {task} / {element}")
                     compile_instance(fragment, variant, task, element)
 
 

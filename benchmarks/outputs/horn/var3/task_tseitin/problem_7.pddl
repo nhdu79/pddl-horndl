@@ -7,5 +7,5 @@
        (designer b)
        (developer c)
        (designer f))
-(:goal (and (AUX34) (not (updating))))
+(:goal (and (AUX9) (not (updating))))
 )

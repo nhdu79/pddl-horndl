@@ -234,6 +234,13 @@ def build_min_and_deletion_rules_for_conjunction_concept(
 
     rules = []
     # dnh: Order assumed via `i`!!!
+    if len(sub_concepts) == 1:
+        # Special case for k=1: min_X1_in_τ(X) is always true, so we can omit it from the body of rule 14.
+        xi = sub_concepts[0]
+        r14 = f"{DEL_CL}{xi.id}(X){RULE_SEPARATOR}{DEL_CL}{super_concept.id}(X), {A_OR_AP_CL}{xi.id}(X){END}"
+        rules.append(r14)
+        return rules
+
     for i, xi in enumerate(sub_concepts):
         min_pred = _tau_name(xi, axiom_id)
         body13 = (
@@ -264,11 +271,16 @@ def build_min_and_deletion_rules_for_role(sub_role, super_role, axiom_id):
         sub_role:  AtomicRole | InverseRole  (R)
         super_role: AtomicRole | InverseRole  (P)
     """
-    min_pred = _tau_name(sub_role, axiom_id)
-    r13 = f"{min_pred}(X,Y){RULE_SEPARATOR}{NOT}{AP_CL}{sub_role.id}(X,Y), {A_OR_AP_CL}{sub_role.id}(X,Y){END}"
-    r14 = f"{DEL_CL}{sub_role.id}(X,Y){RULE_SEPARATOR}{DEL_CL}{super_role.id}(X,Y), {min_pred}(X,Y){END}"
 
-    return [r13, r14]
+    ## Paper-oriented implementation
+    # min_pred = _tau_name(sub_role, axiom_id)
+    # r13 = f"{min_pred}(X,Y){RULE_SEPARATOR}{NOT}{AP_CL}{sub_role.id}(X,Y), {A_OR_AP_CL}{sub_role.id}(X,Y){END}"
+    # r14 = f"{DEL_CL}{sub_role.id}(X,Y){RULE_SEPARATOR}{DEL_CL}{super_role.id}(X,Y), {min_pred}(X,Y){END}"
+    # return [r13, r14]
+
+    ## Optimized implementation: omit min predicate.
+    r14 = f"{DEL_CL}{sub_role.id}(X,Y){RULE_SEPARATOR}{DEL_CL}{super_role.id}(X,Y), {A_OR_AP_CL}{sub_role.id}(X,Y){END}"
+    return [r14]
 
 
 # dnh: Based on the comment, this rule is only implemented for superconcept \bot!

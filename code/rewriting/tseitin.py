@@ -3,7 +3,7 @@
 import argparse
 
 import planning.pddl as pddl
-from update_runner import Timer
+from utils.timer import Timer
 
 AUX_PREDICATE_NAME = "AUX"
 

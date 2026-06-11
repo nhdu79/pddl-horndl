@@ -17,5 +17,5 @@
        (contains j a)
        (contains r d)
        (contains l g))
-(:goal (and (forall (?x - object) (AUX17 ?x)) (not (updating))))
+(:goal (and (forall (?x - object) (AUX5 ?x)) (not (updating))))
 )

@@ -9,7 +9,7 @@ from typing import Optional
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "code"))
 
-from compiler import compile_pddl  # noqa: E402
+from compilation import compile_pddl  # noqa: E402
 from rewriting.new_tseitin import tseitin_pddl  # noqa: E402
 
 # ── Tool paths ────────────────────────────────────────────────────────────────

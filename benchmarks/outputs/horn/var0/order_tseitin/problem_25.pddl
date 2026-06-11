@@ -6,5 +6,5 @@
        (requestedservice voipRequest voip)
        (service voip)
        (order voipRequest))
-(:goal (and (AUX51) (not (updating))))
+(:goal (and (AUX9) (not (updating))))
 )

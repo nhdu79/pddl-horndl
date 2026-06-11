@@ -35,5 +35,5 @@
        (directlyafterobj ba bb)
        (directlyafterobj bb bc)
        (directlyafterobj bc bd))
-(:goal (and (AUX24) (not (updating))))
+(:goal (and (AUX4) (not (updating))))
 )

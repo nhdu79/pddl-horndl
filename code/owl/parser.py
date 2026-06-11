@@ -66,9 +66,11 @@ _UNSUPPORTED_AXIOM_PREDS: list[tuple] = [
     (OWL.equivalentClass,    "owl:equivalentClass"),
     (OWL.equivalentProperty, "owl:equivalentProperty"),
     (OWL.propertyChainAxiom, "owl:propertyChainAxiom"),
-    (OWL.inverseOf,          "owl:inverseOf"),
     (OWL.hasKey,             "owl:hasKey"),
 ]
+# owl:inverseOf on a named property (:P owl:inverseOf :Q) is unsupported.
+# The blank-node form [owl:inverseOf :P] inside rdfs:subPropertyOf IS supported
+# via _resolve_role, so BNode subjects are excluded from the warning below.
 
 # Meta-class types whose instances represent ignored axioms
 _UNSUPPORTED_META_TYPES: list[tuple] = [
@@ -416,6 +418,17 @@ class _OWLBuilder:
                     self._warn(
                         f"unsupported axiom predicate {label} on "
                         f"<{subject_repr}> — axiom ignored"
+                    )
+
+        seen_inv: set[str] = set()
+        for s in self._g.subjects(OWL.inverseOf, None):
+            if isinstance(s, URIRef):
+                key = str(s)
+                if key not in seen_inv:
+                    seen_inv.add(key)
+                    self._warn(
+                        f"unsupported axiom predicate owl:inverseOf on "
+                        f"<{_local_name(key)}> — axiom ignored"
                     )
 
         for type_uri, label in _UNSUPPORTED_META_TYPES:

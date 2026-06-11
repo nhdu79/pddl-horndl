@@ -30,5 +30,5 @@
        (directlyafterobj av aw)
        (directlyafterobj aw ax)
        (directlyafterobj ax ay))
-(:goal (and (AUX24) (not (updating))))
+(:goal (and (AUX4) (not (updating))))
 )

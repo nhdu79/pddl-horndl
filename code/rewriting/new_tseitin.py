@@ -1,6 +1,6 @@
 import argparse
 
-from update_runner import Timer
+from utils.timer import Timer
 import planning.pddl as pddl
 
 AUX_PREDICATE_NAME = "AUX"
@@ -17,7 +17,7 @@ def get_params(el):
         #     return get_params(el.elements)
         return el.parameters
     except AttributeError:
-        breakpoint()
+        raise ValueError("Unknown element type: %s" % type(el))
 
 class Tseitin:
     def __init__(self, domain, problem, output_csv="results.csv"):

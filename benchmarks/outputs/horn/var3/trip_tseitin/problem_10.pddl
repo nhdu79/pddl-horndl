@@ -25,5 +25,5 @@
        (directlyafterobj aq ar)
        (directlyafterobj ar as)
        (directlyafterobj as at))
-(:goal (and (AUX24) (not (updating))))
+(:goal (and (AUX4) (not (updating))))
 )

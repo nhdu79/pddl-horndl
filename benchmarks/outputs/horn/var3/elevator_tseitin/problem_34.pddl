@@ -50,5 +50,5 @@
        (next bf bg)
        (next bg bh)
        (liftat ay))
-(:goal (and (forall (?x - object) (AUX26 ?x)) (not (updating))))
+(:goal (and (forall (?x - object) (AUX7 ?x)) (not (updating))))
 )

@@ -1,3 +1,10 @@
+- [ ] Find out why `phone_assembly doesn't have a plan!
+
+- [x] Change goals for `phone_assembly` as in PROB1
+- [x] Remove `Repaired` predicate!
+- [x] Extend `hasBrokenScreen -> hasScreenInstalled^-`
+- [x] Remove `min_*` for `Horn` whenever there is only 1 concept on LHS or role (by `AorApCl`)
+
 - Mb change name of benchmark to phone?
 - [x] Inverse role functional for *InstalledIn
 - [x] Problem use (for all ?p (and (Phone ?P) (ProductRecord ?P)))

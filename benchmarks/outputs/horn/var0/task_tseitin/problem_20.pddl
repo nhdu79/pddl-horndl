@@ -14,5 +14,5 @@
        (designer q)
        (developer r)
        (developer s))
-(:goal (and (AUX34) (not (updating))))
+(:goal (and (AUX9) (not (updating))))
 )

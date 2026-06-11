@@ -14,3 +14,4 @@ logs/
 result.csv
 *.sas
 generated/
+**/__pycache__/

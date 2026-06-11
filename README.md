@@ -49,7 +49,8 @@ python3 generate_pddl.py
 
 # Choose a DL-Lite fragment
 python3 generate_pddl.py --fragments horn
-python3 generate_pddl.py --fragments core horn   # or --all-fragments
+python3 generate_pddl.py --fragments original     # no coherence update
+python3 generate_pddl.py --fragments core horn   # or --all-fragments (also includes original)
 
 # Run specific variants and/or tasks
 python3 generate_pddl.py --fragments horn --variants var0 var1 --tasks blocks robot
@@ -61,14 +62,17 @@ python3 generate_pddl.py --all-fragments --all-variants --all-tasks
 python3 generate_pddl.py --help
 ```
 
-Available fragments: `core`, `horn`
-Available variants: `original`, `var0`, `var1`, `var2`, `var3`
-Available tasks: `blocks`, `catOG`, `drones`, `dronesv2`, `elevator`, `robot`, `robotConj`, `task`, `order`, `trip`, `tripv2`, `assembly`
+Available fragments: `original`, `core`, `horn`
+  (`original` compiles without coherence update and shares inputs with `core`; variants are ignored for it.)
+Available variants: `var0`, `var1`, `var2`, `var3`
+Available tasks: `blocks`, `catOG`, `elevator`, `dronesv2`, `robot`, `robotConj`, `task`, `order`, `trip`, `tripv2`, `phone_assembly`
 
-> **Horn-only tasks** — `assembly`, `drones`, `dronesv2`, and `robotConj` have inputs only under `benchmarks/inputs/horn/` and must be run with `--fragments horn`. Selecting them with `--fragments core` will fail at input-file lookup.
+> **Horn-only tasks** — `phone_assembly`, `dronesv2`, and `robotConj` have inputs only under `benchmarks/inputs/horn/` and must be run with `--fragments horn`. Selecting them with `--fragments core` or `--fragments original` will fail at input-file lookup.
 
 #### Where are the written .pddl files?
-* Outputs are written to `benchmarks/outputs/[fragment]/[variant]/[task]/`
+* Outputs are written to:
+  * `benchmarks/outputs/[fragment]/[variant]/[task]/` for `core` and `horn` fragments
+  * `benchmarks/outputs/original/[task]/` for the `original` fragment (no variant subfolder)
   * With Tseitin transformation: `[task]_tseitin/domain_[i].pddl` and `[task]_tseitin/problem_[i].pddl`
   * Without: `[task]_no_tseitin/domain_[i].pddl` and `[task]_no_tseitin/problem_[i].pddl`
 
@@ -80,15 +84,14 @@ Available tasks: `blocks`, `catOG`, `drones`, `dronesv2`, `elevator`, `robot`, `
     ```
 
 ## The Benchmark folder:
-* Input PDDL and OWL files are stored under `benchmarks/inputs/<fragment>/<task>/`, split by DL-Lite fragment (`core` or `horn`). For example, `benchmarks/inputs/horn/blocks/` holds the Horn-specific blocks inputs.
-* All outputs of our pipeline are stored in `benchmarks/outputs/<fragment>/<variant>/<task>/`.
+* Input PDDL and OWL files are stored under `benchmarks/inputs/<fragment>/<task>/`, split by DL-Lite fragment (`core` or `horn`). The `original` fragment reuses `core` inputs. For example, `benchmarks/inputs/horn/blocks/` holds the Horn-specific blocks inputs.
+* Outputs are stored in `benchmarks/outputs/<fragment>/<variant>/<task>/` for `core`/`horn`, and `benchmarks/outputs/original/<task>/` for `original`.
 
 ## Mapping from Benchmark names in paper to folder names:
 
 | Paper name | Folder | Fragment |
 |---|---|---|
 | Cats\* | `catOG` | core + horn |
-| Drones | `drones` | horn only |
 | DronesV2 | `dronesv2` | horn only |
 | Elevator | `elevator` | core + horn |
 | TPSA | `order` | core + horn |
@@ -97,7 +100,7 @@ Available tasks: `blocks`, `catOG`, `drones`, `dronesv2`, `elevator`, `robot`, `
 | VTA | `trip` | core + horn |
 | VTA-Roles | `tripv2` | core + horn |
 | TaskAssign | `task` | core + horn |
-| Assembly | `assembly` | horn only |
+| Assembly | `phone_assembly` | horn only |
 
 ### DronesV2 benchmark
 

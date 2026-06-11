@@ -7,5 +7,5 @@
        (designer f)
        (engineer g)
        (engineer h))
-(:goal (and (AUX34) (not (updating))))
+(:goal (and (AUX9) (not (updating))))
 )
