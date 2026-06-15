@@ -1,8 +1,12 @@
-import planning.datalog as datalog
-import planning.pddl as pddl
-from compilation.query_rewriter import prepare_queries
-from compilation.ucq_collector import UCQCollector
-from compilation.utils import (
+import pddl.datalog as datalog
+import pddl.parser as pddl
+from coherence_update import HornUpdateRunner, transform_incompatible_update
+from compilation.domain_transforms import (
+    adjust_actions,
+    construct_update_action,
+    extend_problem_for_coherence_update,
+)
+from compilation.naming import (
     INCONSISTENCY_PREDICATE_NAME,
     QUERY_PREDICATE_NAME,
     get_parameter_list,
@@ -13,10 +17,11 @@ from compilation.utils import (
     query_predicate_name,
     unprime_predicate_name,
 )
-from compilation.variant_options import INCOMPATIBLE_UPDATE_PREDICATE_TYPES
-from coherence_update import HornUpdateRunner, transform_incompatible_update
+from compilation.query_rewriter import prepare_queries
+from compilation.ucq_collector import UCQCollector
+from utils.helpers import parse_name
 from utils.timer import Timer
-from utils.functions import parse_name
+from variant_options import COMPATIBLE_UPDATE, INCOMPATIBLE_UPDATE
 
 from .datalog import (
     _filter_irrelevant_rules,
@@ -72,14 +77,19 @@ class Compiler:
                     if self._is_horn:
                         seen: dict = {}
                         for fact in self.problem.initial_state:
-                            if isinstance(fact, pddl.Fact) and fact.predicate not in seen:
+                            if (
+                                isinstance(fact, pddl.Fact)
+                                and fact.predicate not in seen
+                            ):
                                 arity = len(fact.parameters)
                                 params = (
                                     [pddl.TypedList([f"?x{i}" for i in range(arity)])]
                                     if arity > 0
                                     else []
                                 )
-                                seen[fact.predicate] = pddl.Predicate(fact.predicate, params)
+                                seen[fact.predicate] = pddl.Predicate(
+                                    fact.predicate, params
+                                )
                         initial_predicates = list(seen.values())
                     update_rules, kept = (
                         self.update_runner.filter_non_reachable_predicates(
@@ -92,15 +102,19 @@ class Compiler:
                         )
                         existing = {p.name for p in self.domain.predicates}
                         for p in kept:
-                            if p.name not in existing and not is_non_horn_aux_predicate_name(p.name):
+                            if (
+                                p.name not in existing
+                                and not is_non_horn_aux_predicate_name(p.name)
+                            ):
                                 self.domain.predicates.append(p)
-                    self.domain.construct_update_action(
+                    construct_update_action(
+                        self.domain,
                         self.update_runner.updating_pred_type,
                         self.update_runner.incompatible_update_pred_type,
                         horn=self._is_horn,
                         kept=kept,
                     )
-                    self.problem.extend_for_coherence_update()
+                    extend_problem_for_coherence_update(self.problem)
                     raw_rules += update_rules
 
             with Timer("gen_derived_predicates", file=self.timer_output):
@@ -127,7 +141,7 @@ class Compiler:
                 if (
                     self.update_runner
                     and self.update_runner.incompatible_update_pred_type
-                    == INCOMPATIBLE_UPDATE_PREDICATE_TYPES["compatible_update"]
+                    == COMPATIBLE_UPDATE
                 ):
                     self._datalog_rules, compatible_update = (
                         transform_incompatible_update(self._datalog_rules)
@@ -144,8 +158,8 @@ class Compiler:
 
     def _extend_for_coherence_update(self):
         self._is_horn = isinstance(self.update_runner, HornUpdateRunner)
-        self.domain.adjust_actions(
-            self.update_runner.updating_pred_type, horn=self._is_horn
+        adjust_actions(
+            self.domain, self.update_runner.updating_pred_type, horn=self._is_horn
         )
 
     def _rewrite_via_clipper(self, queries):
@@ -209,12 +223,11 @@ class Compiler:
 
         if (
             self.update_runner
-            and self.update_runner.incompatible_update_pred_type
-            == INCOMPATIBLE_UPDATE_PREDICATE_TYPES["compatible_update"]
+            and self.update_runner.incompatible_update_pred_type == COMPATIBLE_UPDATE
         ):
             assert (
-                "incompatible_update" not in self.predicates
-                and "compatible_update" in self.predicates
+                INCOMPATIBLE_UPDATE not in self.predicates
+                and COMPATIBLE_UPDATE in self.predicates
             ), "incompatible_update should not be in predicates"
 
         self.predicate_arity = {
@@ -301,7 +314,9 @@ class Compiler:
             cond = pddl.And(cond)
             if num_ext > 0:
                 cond = pddl.Exists(get_parameter_list(num_ext, "?y%d"), cond)
-            self.domain.derived_predicates.append(pddl.DerivedPredicate(predicate, cond))
+            self.domain.derived_predicates.append(
+                pddl.DerivedPredicate(predicate, cond)
+            )
 
     def _unprime_conditions_and_enforce_consistency(self):
         def unprimer(fact):

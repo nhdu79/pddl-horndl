@@ -21,7 +21,7 @@ from typing import Union
 
 from rdflib.namespace import OWL
 
-from utils.functions import parse_name
+from utils.helpers import parse_name
 
 # ---------------------------------------------------------------------------
 # Naming constants — used to build compound expression IDs and importable

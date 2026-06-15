@@ -1,9 +1,6 @@
 from abc import ABC, abstractmethod
 
-from compilation.variant_options import (
-    INCOMPATIBLE_UPDATE_PREDICATE_TYPES,
-    UPDATING_PREDICATE_TYPES,
-)
+from variant_options import DERIVED_PREDICATE, INCOMPATIBLE_UPDATE
 
 
 class UpdateRunner(ABC):
@@ -11,10 +8,8 @@ class UpdateRunner(ABC):
 
     def __init__(
         self,
-        updating_pred_type=UPDATING_PREDICATE_TYPES["derived_predicate"],
-        incompatible_update_pred_type=INCOMPATIBLE_UPDATE_PREDICATE_TYPES[
-            "incompatible_update"
-        ],
+        updating_pred_type=DERIVED_PREDICATE,
+        incompatible_update_pred_type=INCOMPATIBLE_UPDATE,
         timer_output="result.csv",
     ):
         self.updating_pred_type = updating_pred_type

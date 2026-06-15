@@ -30,19 +30,20 @@ Python dependency: **rdflib** (used by `code/owl/` for OWL Turtle parsing). Inst
 ## Running the compilation pipeline
 
 ```bash
-# Full benchmark generation — defaults to fragment=core, variant=var0, task=blocks
+# Full benchmark generation — defaults to fragment=ekab, task=blocks
 python3 generate_pddl.py
 
 # Select fragments, variants, and tasks explicitly
 python3 generate_pddl.py --fragments horn --variants var0 var1 --tasks blocks robot
 
 # Run the full benchmark suite
-python3 generate_pddl.py --all-fragments --all-variants --all-tasks
+# (--all-fragments implies var0+var3 for core/horn; --all-tasks filters tasks per fragment)
+python3 generate_pddl.py --all-fragments --all-tasks
 
 # Single test case (edit test.sh variables: task, semantics, i, update)
 bash test.sh
 
-# Manual single compilation — no coherence update (original semantics)
+# Manual single compilation — no coherence update (ekab semantics)
 PYTHONPATH=code python3 -m compilation <ontology.owl> <domain.pddl> <problem.pddl> \
   -d out_domain.pddl -p out_problem.pddl \
   --clipper /path/to/clipper.sh --clipper-mqf
@@ -76,14 +77,16 @@ Set `PYTHONPATH=code` when calling scripts under `code/` directly. `generate_pdd
 
 ## Compilation variants
 
-`generate_pddl.py` supports five variants (`original`, `var0`–`var3`). The four update variants are combinations of two axes:
+`generate_pddl.py` supports four update variants (`var0`–`var3`) for `core` and `horn`, plus the no-update `ekab` fragment. The four update variants are combinations of two axes:
 
 - `--updating-pred-type`: `derived_predicate` (var0, var2) or `action_effect` (var1, var3)
 - `--incompatible-update-pred-type`: `incompatible_update` (var0, var3) or `compatible_update` (var1, var2)
 
-`original` runs without coherence update (no `--dl-lite-fragment` flag passed to the compiler).
+`ekab` runs without coherence update (no `--dl-lite-fragment` flag passed to the compiler).
 
-Output goes to `benchmarks/outputs/<fragment>/<variant>/<task>_no_tseitin/` and `<task>_tseitin/`.
+`BENCHMARK_VARIANTS = ["var0", "var3"]` — the subset used when `--all-fragments` is active.
+
+Output goes to `benchmarks/outputs/<fragment>/<variant>/<task>_no_tseitin/` and `<task>_tseitin/` for `core`/`horn`, and `benchmarks/outputs/ekab/<task>_no_tseitin/` for `ekab`.
 
 ## Code architecture
 
@@ -251,21 +254,52 @@ The program has three strata; each stratum has concept and role variants (unary/
 
 ## Benchmark inputs
 
+Each fragment has its own input directory. Task availability per fragment:
+
 ```
 benchmarks/inputs/
-├── robot/        # Per-instance TTL<i>.owl + robotDomain<i>.pddl (robot has per-instance ontologies)
-├── catOG/        # Single TTL.owl + per-instance problem files
-├── elevator/
-├── order/        # TPSA benchmark
-├── trip/         # VTA benchmark
-├── tripv2/       # VTA-Roles benchmark
-├── task/         # TaskAssign benchmark
-├── blocks/       # blocks.owl + per-instance probBLOCKS<suffix>.pddl
-└── drones/       # TTL.owl — contains unsupported OWL constructs (owl:SymmetricProperty,
-                  #           qualified someValuesFrom); parse_owl() will set is_supported=False
+├── core/               # Shared tasks only
+│   ├── blocks/         # blocks.owl + probBLOCKS<suffix>.pddl
+│   ├── catOG/          # TTL.owl + catOGProblem<i>.pddl
+│   ├── cat_2022/       # TTL.owl + catProblem<i>.pddl
+│   ├── elevator/
+│   ├── order/          # TPSA benchmark
+│   ├── robot/          # Per-instance TTL<i>.owl + robotDomain<i>.pddl
+│   ├── task/           # TaskAssign benchmark
+│   ├── trip/           # VTA benchmark
+│   └── tripv2/         # VTA-Roles benchmark
+├── ekab/               # All tasks (shared + horn+ekab + ekab-only)
+│   ├── blocks/         #   ┐
+│   ├── catOG/          #   │ shared with core and horn
+│   ├── cat_2022/       #   │
+│   ├── elevator/       #   │
+│   ├── order/          #   │
+│   ├── robot/          #   │
+│   ├── task/           #   │
+│   ├── trip/           #   │
+│   ├── tripv2/         #   ┘
+│   ├── dronesv2/       #   ┐ shared with horn (not core)
+│   ├── robotConj/      #   │
+│   ├── phone_assembly/ #   ┘
+│   ├── drones/         #   ┐ ekab-only; TTL.owl uses unsupported OWL constructs
+│   ├── queens/         #   │ (parse_owl() sets is_supported=False for drones)
+│   └── catImproved_2025/ # ┘ ekab-only; ontology uses owl:unionOf (unsupported by core/horn)
+└── horn/               # Shared tasks + horn+ekab tasks
+    ├── blocks/         #   ┐
+    ├── catOG/          #   │ shared with core and ekab
+    ├── cat_2022/       #   │
+    ├── elevator/       #   │
+    ├── order/          #   │
+    ├── robot/          #   │
+    ├── task/           #   │
+    ├── trip/           #   │
+    ├── tripv2/         #   ┘
+    ├── dronesv2/       #   ┐ shared with ekab (not core)
+    ├── robotConj/      #   │
+    └── phone_assembly/ #   ┘
 ```
 
-Paper name → folder: Cats\* → catOG, Robot\* → robot, TPSA → order, VTA → trip, VTA-Roles → tripv2, TaskAssign → task.
+Paper name → folder: Cats\* → catOG, Cats 2022 → cat_2022, Cats Improved 2025 → catImproved_2025 (ekab only), Robot\* → robot, TPSA → order, VTA → trip, VTA-Roles → tripv2, TaskAssign → task.
 
 ## Tests
 

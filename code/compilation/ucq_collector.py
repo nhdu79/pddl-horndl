@@ -1,5 +1,5 @@
-import planning.pddl as pddl
-from compilation.utils import prime_predicate_name, query_predicate_name
+import pddl.parser as pddl
+from compilation.naming import prime_predicate_name, query_predicate_name
 
 class UCQCollector:
     def __init__(self, clipper):

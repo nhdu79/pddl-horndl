@@ -1,0 +1,15 @@
+(define (problem BLOCKS-8-0)
+(:domain BLOCKS)
+(:objects
+  T H G F E C B D A - object)
+(:init
+       (ontable E T)
+       (ontable F T)
+       (ontable B T)
+       (ontable C T)
+       (onblock A G)
+       (onblock G E)
+       (onblock D H)
+       (onblock H F))
+(:goal (and (DATALOG_ON A G) (DATALOG_ON C A) (DATALOG_ON D F) (DATALOG_ON E H) (DATALOG_ON F E) (DATALOG_ON G B) (DATALOG_ON H C) (not (DATALOG_INCONSISTENT))))
+)

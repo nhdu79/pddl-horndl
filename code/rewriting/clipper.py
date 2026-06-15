@@ -3,7 +3,7 @@
 import os
 import subprocess
 
-from utils.functions import parse_name
+from utils.helpers import parse_name
 
 TEMPORARY_DATALOG_FILE = "__temp_clipper_datalog{0}.txt"
 TEMPORARY_QUERY_FILE = "__temp_clipper_query{0}.cq"

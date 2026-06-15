@@ -1,6 +1,6 @@
 from coherence_update.rules.symbols import COMPATIBLE_UPDATE, INCOMPATIBLE_UPDATE
-from planning.datalog import Equality, Negated
-from planning.logic import (
+from pddl.datalog import Equality, Negated
+from pddl.logic import (
     And,
     Comparison,
     DerivedPredicate,

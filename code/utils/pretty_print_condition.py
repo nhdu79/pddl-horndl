@@ -2,7 +2,7 @@
 
 import argparse
 
-import planning.pddl as pddl
+import pddl.parser as pddl
 
 if __name__ == "__main__":
     p = argparse.ArgumentParser()

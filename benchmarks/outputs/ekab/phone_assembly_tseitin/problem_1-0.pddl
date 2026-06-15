@@ -1,0 +1,16 @@
+(define (problem PHONE_ASSEMBLY-1-0)
+(:domain phone_assembly)
+(:objects
+  phone_1 screen_1 spare_screen_1 battery_1 processor_1 - object)
+(:init
+       (phone phone_1)
+       (underwarranty phone_1)
+       (hasbrokenscreen phone_1 screen_1)
+       (screeninstalledin screen_1 phone_1)
+       (battery battery_1)
+       (batteryinstalledin battery_1 phone_1)
+       (processor processor_1)
+       (processorinstalledin processor_1 phone_1)
+       (screen spare_screen_1))
+(:goal (and (forall (?p - object) (AUX15 ?p)) (not (DATALOG_INCONSISTENT))))
+)

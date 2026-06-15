@@ -1,0 +1,11 @@
+(define (problem robotProblem)
+(:domain robot)
+(:objects
+  robot - object)
+(:init
+       (rightof1 robot)
+       (leftof15 robot)
+       (aboveof0 robot)
+       (belowof15 robot))
+(:goal (and (column2 robot) (row1 robot) (not (DATALOG_INCONSISTENT))))
+)

@@ -1,6 +1,6 @@
 import re
 
-from coherence_update.prioritized_update import build_rules_for_pus
+from coherence_update.horn_update import build_rules_for_pus
 from coherence_update.rules.horn.strata import (
     build_actual_deletion_rules_for_concepts,
     build_actual_deletion_rules_for_roles,
@@ -33,7 +33,7 @@ from coherence_update.rules.symbols import (
     RULE_SEPARATOR,
 )
 from coherence_update.runners.base import UpdateRunner
-from compilation.variant_options import UPDATING_PREDICATE_TYPES
+from variant_options import DERIVED_PREDICATE
 from owl import (
     OWL_NOTHING,
     OWL_THING,
@@ -48,8 +48,8 @@ from owl import (
     parse_owl,
     saturate_role_inclusions,
 )
-from planning.logic import Predicate, TypedList
-from utils.functions import parse_name
+from pddl.logic import Predicate, TypedList
+from utils.helpers import parse_name
 
 # Compound-predicate prefixes used by the strata rules, ordered longest-first
 # so that startswith() checks are unambiguous (no prefix is a prefix of another).
@@ -102,7 +102,7 @@ def _predicate_from_tail_atom(atom_name: str, tail: str) -> Predicate:
 
 def _collect_effect_predicates(effect, result: dict) -> None:
     """Recursively collect all Fact predicates from an effect tree as Predicate objects."""
-    from planning.logic import AddEffect, ConjunctiveEffect, ConditionalEffect, DelEffect, ForallEffect
+    from pddl.logic import AddEffect, ConjunctiveEffect, ConditionalEffect, DelEffect, ForallEffect
     if isinstance(effect, (AddEffect, DelEffect)):
         fact = effect.fact
         if fact.predicate not in result:
@@ -126,9 +126,7 @@ class HornUpdateRunner(UpdateRunner):
         normalize_negative_concept_inclusions(self.ontology)
 
     def run(self):
-        include_updating = (
-            self.updating_pred_type == UPDATING_PREDICATE_TYPES["derived_predicate"]
-        )
+        include_updating = self.updating_pred_type == DERIVED_PREDICATE
         return build_rules_for_pus(
             self.ontology, include_updating_rules=include_updating
         )
@@ -169,7 +167,7 @@ class HornUpdateRunner(UpdateRunner):
         rules.extend(build_actual_insertion_rules_for_concepts(all_concept_objs))
         rules.extend(build_actual_insertion_rules_for_roles(all_role_objs))
         # Updating trigger — only when updating() is a derived predicate
-        if self.updating_pred_type == UPDATING_PREDICATE_TYPES["derived_predicate"]:
+        if self.updating_pred_type == DERIVED_PREDICATE:
             rules.extend(build_updating_rules_for_concepts(all_concept_objs))
             rules.extend(build_updating_rules_for_roles(all_role_objs))
         return rules

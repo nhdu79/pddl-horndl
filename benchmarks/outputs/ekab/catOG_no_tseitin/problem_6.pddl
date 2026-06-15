@@ -1,0 +1,15 @@
+(define (problem BTcat_problem)
+(:domain BTcat)
+(:objects
+  a b c d e f g h i j k l - object)
+(:init
+       (cat a)
+       (cat f)
+       (bomb i)
+       (cat l)
+       (contains h i)
+       (contains j f)
+       (contains c l)
+       (contains b a))
+(:goal (and (forall (?x - object) (or (disarmed ?x) (not (DATALOG_PACKAGE ?x)))) (not (DATALOG_INCONSISTENT))))
+)

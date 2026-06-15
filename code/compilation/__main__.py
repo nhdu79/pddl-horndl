@@ -2,9 +2,11 @@
 import argparse
 import sys
 
-from compilation.variant_options import (
-    INCOMPATIBLE_UPDATE_PREDICATE_TYPES,
-    UPDATING_PREDICATE_TYPES,
+from variant_options import (
+    DERIVED_PREDICATE,
+    INCOMPATIBLE_UPDATE,
+    INCOMPATIBLE_UPDATE_PRED_TYPES,
+    UPDATING_PRED_TYPES,
 )
 
 from compilation import compile_pddl
@@ -26,11 +28,11 @@ def main():
     parser.add_argument("--output-csv", default="results.csv")
     parser.add_argument("--benchmark-name", default="test 1")
     parser.add_argument(
-        "--updating-pred-type", default=UPDATING_PREDICATE_TYPES["derived_predicate"]
+        "--updating-pred-type", default=DERIVED_PREDICATE
     )
     parser.add_argument(
         "--incompatible-update-pred-type",
-        default=INCOMPATIBLE_UPDATE_PREDICATE_TYPES["incompatible_update"],
+        default=INCOMPATIBLE_UPDATE,
     )
     parser.add_argument("--clipper-mqf", default=False, action="store_true")
     parser.add_argument("--clipper", default="clipper.sh")
@@ -42,16 +44,16 @@ def main():
     parser.add_argument("--debug", default=False, action="store_true")
     args = parser.parse_args()
 
-    if args.updating_pred_type not in UPDATING_PREDICATE_TYPES:
+    if args.updating_pred_type not in UPDATING_PRED_TYPES:
         print(
             "Invalid updating predicate type. Available types are: %s"
-            % ", ".join(UPDATING_PREDICATE_TYPES.keys())
+            % ", ".join(sorted(UPDATING_PRED_TYPES))
         )
         sys.exit(1)
-    if args.incompatible_update_pred_type not in INCOMPATIBLE_UPDATE_PREDICATE_TYPES:
+    if args.incompatible_update_pred_type not in INCOMPATIBLE_UPDATE_PRED_TYPES:
         print(
             "Invalid incompatible update predicate type. Available types are: %s"
-            % ", ".join(INCOMPATIBLE_UPDATE_PREDICATE_TYPES.keys())
+            % ", ".join(sorted(INCOMPATIBLE_UPDATE_PRED_TYPES))
         )
         sys.exit(1)
 

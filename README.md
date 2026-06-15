@@ -44,35 +44,42 @@ The following software is required for running `generate_pddl.py`, which generat
 
 #### Basic usage:
 ```sh
-# Run with defaults (fragment: core, variant: var0, task: blocks)
+# Run with defaults (fragment: ekab, variant: none, task: blocks)
 python3 generate_pddl.py
 
 # Choose a DL-Lite fragment
 python3 generate_pddl.py --fragments horn
-python3 generate_pddl.py --fragments original     # no coherence update
-python3 generate_pddl.py --fragments core horn   # or --all-fragments (also includes original)
+python3 generate_pddl.py --fragments ekab        # no coherence update
+python3 generate_pddl.py --fragments core horn   # or --all-fragments (also includes ekab)
 
 # Run specific variants and/or tasks
 python3 generate_pddl.py --fragments horn --variants var0 var1 --tasks blocks robot
 
 # Run the full benchmark suite
-python3 generate_pddl.py --all-fragments --all-variants --all-tasks
+# (--all-fragments implies var0 + var3 for core/horn; --all-tasks filters tasks per fragment)
+python3 generate_pddl.py --all-fragments --all-tasks
 
 # Show all available options
 python3 generate_pddl.py --help
 ```
 
-Available fragments: `original`, `core`, `horn`
-  (`original` compiles without coherence update and shares inputs with `core`; variants are ignored for it.)
+Available fragments: `ekab`, `core`, `horn`
+  (`ekab` compiles without coherence update; variants are ignored for it.)
 Available variants: `var0`, `var1`, `var2`, `var3`
-Available tasks: `blocks`, `catOG`, `elevator`, `dronesv2`, `robot`, `robotConj`, `task`, `order`, `trip`, `tripv2`, `phone_assembly`
+  (Benchmark suite uses `var0` and `var3` when `--all-fragments` is active.)
 
-> **Horn-only tasks** — `phone_assembly`, `dronesv2`, and `robotConj` have inputs only under `benchmarks/inputs/horn/` and must be run with `--fragments horn`. Selecting them with `--fragments core` or `--fragments original` will fail at input-file lookup.
+| Task group | Tasks | Fragments |
+|---|---|---|
+| Shared | `blocks`, `catOG`, `cat_2022`, `elevator`, `robot`, `task`, `order`, `trip`, `tripv2` | all |
+| Horn + ekab | `dronesv2`, `robotConj`, `phone_assembly` | horn, ekab |
+| ekab only | `drones`, `queens`, `catImproved_2025` | ekab |
+
+> **Task–fragment compatibility** — `--all-tasks` automatically restricts each fragment to its supported tasks. Explicitly passing unsupported tasks (e.g. `--fragments core --tasks drones`) will fail at input-file lookup.
 
 #### Where are the written .pddl files?
 * Outputs are written to:
   * `benchmarks/outputs/[fragment]/[variant]/[task]/` for `core` and `horn` fragments
-  * `benchmarks/outputs/original/[task]/` for the `original` fragment (no variant subfolder)
+  * `benchmarks/outputs/ekab/[task]/` for the `ekab` fragment (no variant subfolder)
   * With Tseitin transformation: `[task]_tseitin/domain_[i].pddl` and `[task]_tseitin/problem_[i].pddl`
   * Without: `[task]_no_tseitin/domain_[i].pddl` and `[task]_no_tseitin/problem_[i].pddl`
 
@@ -84,27 +91,31 @@ Available tasks: `blocks`, `catOG`, `elevator`, `dronesv2`, `robot`, `robotConj`
     ```
 
 ## The Benchmark folder:
-* Input PDDL and OWL files are stored under `benchmarks/inputs/<fragment>/<task>/`, split by DL-Lite fragment (`core` or `horn`). The `original` fragment reuses `core` inputs. For example, `benchmarks/inputs/horn/blocks/` holds the Horn-specific blocks inputs.
-* Outputs are stored in `benchmarks/outputs/<fragment>/<variant>/<task>/` for `core`/`horn`, and `benchmarks/outputs/original/<task>/` for `original`.
+* Input PDDL and OWL files are stored under `benchmarks/inputs/<fragment>/<task>/`, one directory per fragment (`core`, `ekab`, `horn`). For example, `benchmarks/inputs/horn/blocks/` holds the Horn-specific blocks inputs.
+* Outputs are stored in `benchmarks/outputs/<fragment>/<variant>/<task>/` for `core`/`horn`, and `benchmarks/outputs/ekab/<task>/` for `ekab`.
 
 ## Mapping from Benchmark names in paper to folder names:
 
 | Paper name | Folder | Fragment |
 |---|---|---|
-| Cats\* | `catOG` | core + horn |
-| DronesV2 | `dronesv2` | horn only |
-| Elevator | `elevator` | core + horn |
-| TPSA | `order` | core + horn |
-| Robot\* | `robot` | core + horn |
-| RobotConj | `robotConj` | horn only |
-| VTA | `trip` | core + horn |
-| VTA-Roles | `tripv2` | core + horn |
-| TaskAssign | `task` | core + horn |
-| Assembly | `phone_assembly` | horn only |
+| Cats\* | `catOG` | all |
+| Cats 2022 | `cat_2022` | all |
+| Cats Improved 2025 | `catImproved_2025` | ekab only |
+| Drones | `drones` | ekab only |
+| DronesV2 | `dronesv2` | horn + ekab |
+| Elevator | `elevator` | all |
+| N-Queens | `queens` | ekab only |
+| TPSA | `order` | all |
+| Robot\* | `robot` | all |
+| RobotConj | `robotConj` | horn + ekab |
+| VTA | `trip` | all |
+| VTA-Roles | `tripv2` | all |
+| TaskAssign | `task` | all |
+| Assembly | `phone_assembly` | horn + ekab |
 
 ### DronesV2 benchmark
 
-`dronesv2` is a Horn DL-Lite rewrite of the `drones` benchmark. The original `drones` ontology (`benchmarks/inputs/etc/drones/TTL.owl`) is unsupported by the parser (`is_supported=False`) because it uses `owl:someValuesFrom` with non-`owl:Thing` fillers and `owl:SymmetricProperty`. `dronesv2` fixes both issues using **sub-role splitting** (Option A):
+`dronesv2` is a Horn DL-Lite rewrite of the `drones` benchmark. The original `drones` ontology (`benchmarks/inputs/ekab/drones/TTL.owl`) is unsupported by the parser (`is_supported=False`) because it uses `owl:someValuesFrom` with non-`owl:Thing` fillers and `owl:SymmetricProperty`. Since the `ekab` fragment does not invoke the coherence-update pipeline, `drones` can still be compiled under `ekab`. `dronesv2` fixes both issues for `horn`/`core` using **sub-role splitting** (Option A):
 
 | Original qualified restriction | Replacement sub-role | Sub-role inclusion |
 |---|---|---|

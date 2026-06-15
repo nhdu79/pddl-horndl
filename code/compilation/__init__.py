@@ -1,12 +1,8 @@
 import shutil
 
-import planning.pddl as pddl
-from compilation.variant_options import (
-    INCOMPATIBLE_UPDATE_PREDICATE_TYPES,
-    UPDATING_PREDICATE_TYPES,
-)
+import pddl.parser as pddl
 from rewriting.clipper import Clipper
-from coherence_update import make_update_runner
+from variant_options import DERIVED_PREDICATE, INCOMPATIBLE_UPDATE
 
 from .pipeline import Compiler
 from .ontology import TEMPORARY_ONTOLOGY_FILE, construct_ontology_for_clipper
@@ -30,16 +26,16 @@ def compile_pddl(
     dl_lite_fragment: str = "core",
     rls_path: str = "",
     nmo_path: str = "",
-    updating_pred_type: str = UPDATING_PREDICATE_TYPES["derived_predicate"],
-    incompatible_update_pred_type: str = INCOMPATIBLE_UPDATE_PREDICATE_TYPES[
-        "incompatible_update"
-    ],
+    updating_pred_type: str = DERIVED_PREDICATE,
+    incompatible_update_pred_type: str = INCOMPATIBLE_UPDATE,
     filter_unimportant: bool = True,
     expensive_filtering: bool = True,
     timer_output: str = "result.csv",
     verbose: bool = False,
     debug: bool = False,
 ) -> None:
+
+    from coherence_update import make_update_runner
 
     do_coherence_update = dl_lite_fragment == "horn" or bool(rls_path and nmo_path)
     update_runner = (

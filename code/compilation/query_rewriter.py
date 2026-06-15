@@ -1,5 +1,5 @@
-import planning.pddl as pddl
-from compilation.utils import query_predicate_name
+import pddl.parser as pddl
+from compilation.naming import query_predicate_name
 
 
 def _format_cq(query_id, cq):

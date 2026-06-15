@@ -1,7 +1,7 @@
 import re
 
-import planning.datalog as datalog
-from compilation.utils import (
+import pddl.datalog as datalog
+from compilation.naming import (
     INCONSISTENCY_PREDICATE_NAME,
     encodes_inconsistency,
     get_query_id,

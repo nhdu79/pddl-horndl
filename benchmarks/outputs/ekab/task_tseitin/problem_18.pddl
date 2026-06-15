@@ -1,0 +1,17 @@
+(define (problem taskAssigment_problem)
+(:domain taskAssigment)
+(:objects
+  a b c d e f g h i j k l m n o p q r - object)
+(:init
+       (designer a)
+       (engineer c)
+       (developer d)
+       (designer f)
+       (designer g)
+       (engineer h)
+       (engineer j)
+       (developer m)
+       (developer n)
+       (engineer p))
+(:goal (and (AUX12) (not (DATALOG_INCONSISTENT))))
+)

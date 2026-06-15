@@ -4,8 +4,8 @@ import subprocess
 import tempfile
 from pathlib import Path
 
-from coherence_update.classes.inclusion import INCLUSION_TYPES_ORDER
-from coherence_update.classes.tbox import TBox
+from coherence_update.inclusion import INCLUSION_TYPES_ORDER
+from coherence_update.tbox import TBox
 from coherence_update.rules.core.atomic import (
     build_insert_and_delete_rules_and_incompatible_update_for_atomic_concepts,
     build_insert_and_delete_rules_and_incompatible_update_for_atomic_roles,
@@ -15,9 +15,9 @@ from coherence_update.rules.core.atomic import (
 from coherence_update.rules.core.negative import atomicA_closure, roleP_closure
 from coherence_update.runners.base import UpdateRunner
 from utils.timer import Timer
-from coherence_update.update import CoherenceUpdate
-from compilation.variant_options import UPDATING_PREDICATE_TYPES
-from utils.functions import get_repr, read_predicates, read_unary_predicate
+from coherence_update.core_update import CoherenceUpdate
+from utils.helpers import get_repr, read_predicates, read_unary_predicate
+from variant_options import DERIVED_PREDICATE
 
 _CODE_DIR = Path(__file__).resolve().parents[2]  # .../code/
 TMP_DIR = str(_CODE_DIR.parent / "tmp")
@@ -74,7 +74,7 @@ class CoreUpdateRunner(UpdateRunner):
                 missing_roles
             )
         )
-        if self.updating_pred_type == UPDATING_PREDICATE_TYPES["derived_predicate"]:
+        if self.updating_pred_type == DERIVED_PREDICATE:
             rules.extend(build_updating_rules_for_atomic_concepts(missing_concepts))
             rules.extend(build_updating_rules_for_atomic_roles(missing_roles))
 
