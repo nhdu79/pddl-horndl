@@ -24,7 +24,6 @@
        (environment bc env)
        (environment ff env)
        (environment fe env)
-       (environment fe env)
        (veryclose aa ab)
        (veryclose aa ba)
        (veryclose ab ac)

@@ -22,7 +22,6 @@
        (tree ac)
        (lowvisibility env)
        (environment ae env)
-       (environment bc env)
        (environment cc env)
        (environment bc env)
        (environment cb env)

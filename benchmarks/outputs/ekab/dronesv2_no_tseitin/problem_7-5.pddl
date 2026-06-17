@@ -28,7 +28,6 @@
        (environment db env)
        (environment ef env)
        (environment fa env)
-       (environment cc env)
        (environment dd env)
        (veryclose aa ab)
        (veryclose aa ba)

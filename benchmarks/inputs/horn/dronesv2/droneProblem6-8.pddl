@@ -21,7 +21,6 @@
 		(Tree ac)
 		(LowVisibility env)
 		(environment ae env)
-		(environment bc env)
 		(environment cc env)
 		(environment bc env)
 		(environment cb env)
@@ -138,13 +137,13 @@
 		(near ee fd)
 		(near ef fe)
 	)
-	(:goal (not (mko (exists (?x ?y) 
- 		 (and 
- 			 (RiskOfPhysicalDamage ?x) 
- 			 (RiskOfPhysicalDamage ?y) 
- 			 (near ?x ?y) 
- 		 )) 
- 	 )) 
+	(:goal (not (mko (exists (?x ?y)
+ 		 (and
+ 			 (RiskOfPhysicalDamage ?x)
+ 			 (RiskOfPhysicalDamage ?y)
+ 			 (near ?x ?y)
+ 		 ))
+ 	 ))
  	)
 
 )

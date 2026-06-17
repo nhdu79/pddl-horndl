@@ -43,7 +43,6 @@
        (environment cg env)
        (environment bh env)
        (environment eg env)
-       (environment bh env)
        (environment hb env)
        (veryclose aa ab)
        (veryclose aa ba)

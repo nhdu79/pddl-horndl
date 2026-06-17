@@ -20,7 +20,6 @@
 		(environment be env)
 		(environment cb env)
 		(environment ed env)
-		(environment be env)
 		(veryClose aa ab)
 		(veryClose aa ba)
 		(veryClose ab ac)

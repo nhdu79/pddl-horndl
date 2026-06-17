@@ -24,7 +24,6 @@
        (environment ae env)
        (environment bc env)
        (environment cc env)
-       (environment bc env)
        (environment cb env)
        (environment be env)
        (environment dc env)

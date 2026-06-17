@@ -43,8 +43,6 @@
 		(environment if env)
 		(environment ha env)
 		(environment hi env)
-		(environment fg env)
-		(environment ed env)
 		(environment ac env)
 		(veryClose aa ab)
 		(veryClose aa ba)

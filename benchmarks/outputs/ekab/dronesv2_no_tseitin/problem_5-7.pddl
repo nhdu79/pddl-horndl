@@ -21,7 +21,6 @@
        (environment be env)
        (environment cb env)
        (environment ed env)
-       (environment be env)
        (veryclose aa ab)
        (veryclose aa ba)
        (veryclose ab ac)

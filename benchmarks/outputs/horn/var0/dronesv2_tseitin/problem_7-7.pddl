@@ -30,7 +30,6 @@
        (environment bb env)
        (environment ce env)
        (environment ba env)
-       (environment bb env)
        (environment aa env)
        (veryclose aa ab)
        (veryclose aa ba)

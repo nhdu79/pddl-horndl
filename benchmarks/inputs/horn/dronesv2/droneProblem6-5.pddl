@@ -23,7 +23,6 @@
 		(environment bc env)
 		(environment ff env)
 		(environment fe env)
-		(environment fe env)
 		(veryClose aa ab)
 		(veryClose aa ba)
 		(veryClose ab ac)

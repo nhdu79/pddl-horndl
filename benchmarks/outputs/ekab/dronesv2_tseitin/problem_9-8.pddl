@@ -38,7 +38,6 @@
        (environment hd env)
        (environment ei env)
        (environment ef env)
-       (environment ed env)
        (environment fa env)
        (environment fi env)
        (environment ch env)

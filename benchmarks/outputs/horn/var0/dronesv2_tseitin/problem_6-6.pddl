@@ -22,7 +22,6 @@
        (environment ed env)
        (environment ad env)
        (environment ef env)
-       (environment ed env)
        (environment fc env)
        (environment bd env)
        (environment eb env)
