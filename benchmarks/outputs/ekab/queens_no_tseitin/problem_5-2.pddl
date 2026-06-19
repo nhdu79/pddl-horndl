@@ -1,7 +1,5 @@
 (define (problem queen_problem)
 (:domain queens)
-(:objects
-  aa ab ac ad ae ba bb bc bd be ca cb cc cd ce da db dc dd de ea eb ec ed ee - object)
 (:init
        (queen ea)
        (queen ec)

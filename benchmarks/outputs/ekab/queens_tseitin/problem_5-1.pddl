@@ -1,7 +1,5 @@
 (define (problem queen_problem)
 (:domain queens)
-(:objects
-  aa ab ac ad ae ba bb bc bd be ca cb cc cd ce da db dc dd de ea eb ec ed ee - object)
 (:init
        (queen ed)
        (horinline aa ab)
@@ -76,5 +74,5 @@
        (rightdiagonal dc eb)
        (rightdiagonal dd ec)
        (rightdiagonal de ed))
-(:goal (forall (?x ?y - object) (AUX4 ?y ?x)))
+(:goal (forall (?x ?y - object) (AUX4 ?x ?y)))
 )

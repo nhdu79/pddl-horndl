@@ -1,7 +1,5 @@
 (define (problem drone_problem)
 (:domain drone)
-(:objects
-  aa ab ac ad ae af ag ah ai aj ba bb bc bd be bf bg bh bi bj ca cb cc cd ce cf cg ch ci cj da db dc dd de df dg dh di dj ea eb ec ed ee ef eg eh ei ej fa fb fc fd fe ff fg fh fi fj ga gb gc gd ge gf gg gh gi gj ha hb hc hd he hf hg hh hi hj ia ib ic id ie if ig ih ii ij ja jb jc jd je jf jg jh ji jj env - object)
 (:init
        (wetdrone fg)
        (wetdrone fh)
@@ -49,11 +47,9 @@
        (environment hc env)
        (environment bg env)
        (environment gg env)
-       (environment ah env)
        (environment he env)
        (environment gi env)
        (environment dc env)
-       (environment da env)
        (environment aj env)
        (environment ia env)
        (environment ge env)

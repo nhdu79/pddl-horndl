@@ -1,7 +1,5 @@
 (define (problem robotProblem)
 (:domain robot)
-(:objects
-  robot - object)
 (:init
        (rightof0 robot)
        (leftof19 robot)

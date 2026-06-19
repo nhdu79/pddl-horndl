@@ -1,7 +1,5 @@
 (define (problem drone_problem)
 (:domain drone)
-(:objects
-  aa ab ac ad ae af ag ba bb bc bd be bf bg ca cb cc cd ce cf cg da db dc dd de df dg ea eb ec ed ee ef eg fa fb fc fd fe ff fg ga gb gc gd ge gf gg env - object)
 (:init
        (wetdrone cc)
        (drone dd)
@@ -30,7 +28,6 @@
        (environment bb env)
        (environment ce env)
        (environment ba env)
-       (environment bb env)
        (environment aa env)
        (veryclose aa ab)
        (veryclose aa ba)

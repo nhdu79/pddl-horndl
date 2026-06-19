@@ -1,7 +1,5 @@
 (define (problem BTcat_problem)
 (:domain BTcat)
-(:objects
-  a b c d e f g h i j k l - object)
 (:init
        (cat a)
        (cat f)

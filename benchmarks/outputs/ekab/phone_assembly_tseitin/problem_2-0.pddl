@@ -1,7 +1,5 @@
 (define (problem PHONE_ASSEMBLY-2-0)
 (:domain phone_assembly)
-(:objects
-  phone_1 phone_2 screen_1 spare_screen_1 battery_1 processor_1 screen_2 battery_2 processor_2 - object)
 (:init
        (phone phone_1)
        (phone phone_2)

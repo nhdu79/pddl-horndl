@@ -77,6 +77,9 @@ def compile_pddl(
     )
     compiler()
 
+    domain.constants = problem.objects
+    problem.objects = None
+
     if verbose:
         compiler.print_compilation_information()
 

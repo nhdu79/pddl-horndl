@@ -1,7 +1,5 @@
 (define (problem drone_problem)
 (:domain drone)
-(:objects
-  aa ab ac ad ae ba bb bc bd be ca cb cc cd ce da db dc dd de ea eb ec ed ee env - object)
 (:init
        (wetdrone dc)
        (drone cc)

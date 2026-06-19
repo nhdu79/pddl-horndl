@@ -1,7 +1,5 @@
 (define (problem Wsmo2VTAT_problem)
 (:domain Wsmo2VTAT)
-(:objects
-  iswc_2007 aa ab ac ad ae af ag ah ai aj ak al am an ao ap aq - object)
 (:init
        (trip iswc_2007)
        (notfree iswc_2007)

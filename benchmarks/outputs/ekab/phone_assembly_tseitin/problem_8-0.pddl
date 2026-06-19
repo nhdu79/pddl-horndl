@@ -1,7 +1,5 @@
 (define (problem PHONE_ASSEMBLY-8-0)
 (:domain phone_assembly)
-(:objects
-  phone_1 phone_2 phone_3 phone_4 phone_5 phone_6 phone_7 phone_8 screen_1 spare_screen_1 battery_1 processor_1 screen_2 battery_2 spare_battery_2 processor_2 screen_3 battery_3 processor_3 spare_processor_3 screen_4 spare_screen_4 battery_4 processor_4 screen_5 battery_5 processor_5 screen_6 battery_6 processor_6 screen_7 battery_7 processor_7 screen_8 battery_8 processor_8 - object)
 (:init
        (phone phone_1)
        (phone phone_2)

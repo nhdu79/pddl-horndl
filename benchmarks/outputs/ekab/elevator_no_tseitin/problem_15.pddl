@@ -1,7 +1,5 @@
 (define (problem elevators_problem)
 (:domain elevators)
-(:objects
-  pass_n pass_e pass_g pass_c pass_m pass_o a b d f h i j k l - object)
 (:init
        (origin pass_n i)
        (destin pass_n h)

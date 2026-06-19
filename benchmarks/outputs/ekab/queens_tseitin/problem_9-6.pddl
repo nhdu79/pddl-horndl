@@ -1,7 +1,5 @@
 (define (problem queen_problem)
 (:domain queens)
-(:objects
-  aa ab ac ad ae af ag ah ai ba bb bc bd be bf bg bh bi ca cb cc cd ce cf cg ch ci da db dc dd de df dg dh di ea eb ec ed ee ef eg eh ei fa fb fc fd fe ff fg fh fi ga gb gc gd ge gf gg gh gi ha hb hc hd he hf hg hh hi ia ib ic id ie if ig ih ii - object)
 (:init
        (queen db)
        (queen ah)
@@ -281,5 +279,5 @@
        (rightdiagonal hg if)
        (rightdiagonal hh ig)
        (rightdiagonal hi ih))
-(:goal (forall (?x ?y - object) (AUX4 ?y ?x)))
+(:goal (forall (?x ?y - object) (AUX4 ?x ?y)))
 )

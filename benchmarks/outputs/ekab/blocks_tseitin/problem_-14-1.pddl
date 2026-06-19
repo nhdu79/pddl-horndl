@@ -1,7 +1,5 @@
 (define (problem BLOCKS-14-1)
 (:domain BLOCKS)
-(:objects
-  T K A F L D B M E J N H I C G - object)
 (:init
        (ontable J T)
        (ontable E T)
