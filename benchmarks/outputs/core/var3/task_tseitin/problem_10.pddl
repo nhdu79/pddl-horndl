@@ -6,5 +6,5 @@
        (engineer h)
        (developer i)
        (designer j))
-(:goal (and (AUX80) (not (updating))))
+(:goal (and (AUX69) (not (updating))))
 )

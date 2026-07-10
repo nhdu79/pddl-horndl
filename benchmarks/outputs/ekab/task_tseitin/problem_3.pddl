@@ -2,5 +2,5 @@
 (:domain taskAssigment)
 (:init
        (developer c))
-(:goal (and (AUX12) (not (DATALOG_INCONSISTENT))))
+(:goal (and (AUX8) (not (DATALOG_INCONSISTENT))))
 )

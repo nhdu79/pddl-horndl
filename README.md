@@ -59,6 +59,11 @@ python3 generate_pddl.py --fragments horn --variants var0 var1 --tasks blocks ro
 # (--all-fragments implies var0 + var3 for core/horn; --all-tasks filters tasks per fragment)
 python3 generate_pddl.py --all-fragments --all-tasks
 
+# Control which outputs are produced (default: both)
+python3 generate_pddl.py --tseitin none  # no-tseitin output only
+python3 generate_pddl.py --tseitin only  # tseitin output only
+python3 generate_pddl.py --tseitin both  # both (default)
+
 # Show all available options
 python3 generate_pddl.py --help
 ```
@@ -82,6 +87,7 @@ Available variants: `var0`, `var1`, `var2`, `var3`
   * `benchmarks/outputs/ekab/[task]/` for the `ekab` fragment (no variant subfolder)
   * With Tseitin transformation: `[task]_tseitin/domain_[i].pddl` and `[task]_tseitin/problem_[i].pddl`
   * Without: `[task]_no_tseitin/domain_[i].pddl` and `[task]_no_tseitin/problem_[i].pddl`
+* The `--tseitin` flag controls which of the above are produced (`none`, `only`, `both`; default `both`).
 
 #### How do I run the planning benchmarks?
 * Detailed instructions on the official Fast Downward webpage: https://www.fast-downward.org/latest/documentation/planner-usage/

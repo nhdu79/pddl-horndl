@@ -33,6 +33,11 @@ def compile_pddl(
     timer_output: str = "result.csv",
     verbose: bool = False,
     debug: bool = False,
+    fragment: str = None,
+    variant: str = None,
+    task: str = None,
+    element: str = None,
+    tseitin: bool = None,
 ) -> None:
 
     from coherence_update import make_update_runner
@@ -74,6 +79,11 @@ def compile_pddl(
         expensive_duplicate_filtering=expensive_filtering,
         update_runner=update_runner,
         timer_output=timer_output,
+        fragment=fragment,
+        variant=variant,
+        task=task,
+        element=element,
+        tseitin=tseitin,
     )
     compiler()
 

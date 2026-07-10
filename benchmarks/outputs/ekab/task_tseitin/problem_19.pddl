@@ -12,5 +12,5 @@
        (developer o)
        (developer q)
        (engineer s))
-(:goal (and (AUX12) (not (DATALOG_INCONSISTENT))))
+(:goal (and (AUX10) (not (DATALOG_INCONSISTENT))))
 )

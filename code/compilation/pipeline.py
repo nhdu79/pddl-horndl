@@ -25,6 +25,7 @@ from variant_options import COMPATIBLE_UPDATE, INCOMPATIBLE_UPDATE
 
 from .datalog import (
     _filter_irrelevant_rules,
+    _filter_raw_rules_for_ekab,
     _filter_raw_rules_from_reachable_predicates,
     _parse_datalog_rules,
 )
@@ -41,6 +42,11 @@ class Compiler:
         expensive_duplicate_filtering=False,
         update_runner=None,
         timer_output=None,
+        fragment=None,
+        variant=None,
+        task=None,
+        element=None,
+        tseitin=None,
     ):
         self.domain = domain
         self.problem = problem
@@ -51,9 +57,23 @@ class Compiler:
         self.expensive_duplicate_filtering = expensive_duplicate_filtering
         self.update_runner = update_runner
         self.timer_output = timer_output
+        self.fragment = fragment
+        self.variant = variant
+        self.task = task
+        self.element = element
+        self.tseitin = tseitin
 
     def __call__(self):
-        with Timer("compilation", block=True, file=self.timer_output):
+        with Timer(
+            "compilation",
+            block=True,
+            file=self.timer_output,
+            fragment=self.fragment,
+            variant=self.variant,
+            task=self.task,
+            element=self.element,
+            tseitin=self.tseitin,
+        ):
             if self.update_runner:
                 with Timer("domain_extension", file=self.timer_output):
                     self._extend_for_coherence_update()
@@ -69,28 +89,13 @@ class Compiler:
                 )
                 raw_rules = self._rewrite_via_clipper(self._queries)
 
+            with Timer("construct_initial_predicates", file=self.timer_output):
+                initial_predicates = self._collect_initial_predicates()
+
             if self.update_runner:
-                with Timer("construct_update_rules", file=self.timer_output):
+                with Timer("construct_and_filter_raw_rules", file=self.timer_output):
                     update_rules = self.update_runner.run()
                     update_rules += self._missing_predicate_rules()
-                    initial_predicates = None
-                    if self._is_horn:
-                        seen: dict = {}
-                        for fact in self.problem.initial_state:
-                            if (
-                                isinstance(fact, pddl.Fact)
-                                and fact.predicate not in seen
-                            ):
-                                arity = len(fact.parameters)
-                                params = (
-                                    [pddl.TypedList([f"?x{i}" for i in range(arity)])]
-                                    if arity > 0
-                                    else []
-                                )
-                                seen[fact.predicate] = pddl.Predicate(
-                                    fact.predicate, params
-                                )
-                        initial_predicates = list(seen.values())
                     update_rules, kept = (
                         self.update_runner.filter_non_reachable_predicates(
                             update_rules, self.domain.actions, initial_predicates
@@ -116,6 +121,11 @@ class Compiler:
                     )
                     extend_problem_for_coherence_update(self.problem)
                     raw_rules += update_rules
+            else:
+                with Timer("filter_ekab_rules", file=self.timer_output):
+                    raw_rules, _ = _filter_raw_rules_for_ekab(
+                        raw_rules, self.domain.actions, initial_predicates
+                    )
 
             with Timer("gen_derived_predicates", file=self.timer_output):
                 self._adapt_predicate_names_to_clipper()
@@ -171,6 +181,19 @@ class Compiler:
                 for q in qs:
                     rules.extend(self.clipper.rewrite_cq(q))
         return rules
+
+    def _collect_initial_predicates(self):
+        seen: dict = {}
+        for fact in self.problem.initial_state:
+            if isinstance(fact, pddl.Fact) and fact.predicate not in seen:
+                arity = len(fact.parameters)
+                params = (
+                    [pddl.TypedList([f"?x{i}" for i in range(arity)])]
+                    if arity > 0
+                    else []
+                )
+                seen[fact.predicate] = pddl.Predicate(fact.predicate, params)
+        return list(seen.values())
 
     def _missing_predicate_rules(self):
         appeared_in_domain = {

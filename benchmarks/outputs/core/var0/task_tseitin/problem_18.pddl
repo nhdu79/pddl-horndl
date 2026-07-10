@@ -11,5 +11,5 @@
        (developer m)
        (developer n)
        (engineer p))
-(:goal (and (AUX80) (not (updating))))
+(:goal (and (AUX69) (not (updating))))
 )

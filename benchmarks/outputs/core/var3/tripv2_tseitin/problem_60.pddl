@@ -73,5 +73,5 @@
        (directlyafterobj co cp)
        (directlyafterobj cp cq)
        (directlyafterobj cq cr))
-(:goal (and (AUX41) (not (updating))))
+(:goal (and (AUX1) (not (updating))))
 )

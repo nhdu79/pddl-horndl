@@ -163,5 +163,5 @@
        (rightdiagonal fe gd)
        (rightdiagonal ff ge)
        (rightdiagonal fg gf))
-(:goal (forall (?x ?y - object) (AUX4 ?x ?y)))
+(:goal (forall (?x ?y - object) (AUX4 ?y ?x)))
 )

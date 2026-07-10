@@ -9,5 +9,5 @@
        (developer j)
        (engineer m)
        (designer n))
-(:goal (and (AUX12) (not (DATALOG_INCONSISTENT))))
+(:goal (and (AUX10) (not (DATALOG_INCONSISTENT))))
 )

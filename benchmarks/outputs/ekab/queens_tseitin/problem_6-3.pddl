@@ -114,5 +114,5 @@
        (rightdiagonal ed fc)
        (rightdiagonal ee fd)
        (rightdiagonal ef fe))
-(:goal (forall (?x ?y - object) (AUX4 ?x ?y)))
+(:goal (forall (?x ?y - object) (AUX4 ?y ?x)))
 )

@@ -4,5 +4,5 @@
        (engineer a)
        (developer b)
        (developer e))
-(:goal (and (AUX80) (not (updating))))
+(:goal (and (AUX69) (not (updating))))
 )

@@ -5,5 +5,5 @@
        (designer f)
        (engineer g)
        (engineer h))
-(:goal (and (AUX12) (not (DATALOG_INCONSISTENT))))
+(:goal (and (AUX9) (not (DATALOG_INCONSISTENT))))
 )

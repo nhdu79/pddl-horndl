@@ -27,5 +27,5 @@
        (contains ag au)
        (contains ay ai)
        (contains al ar))
-(:goal (and (forall (?x - object) (AUX16 ?x)) (not (updating))))
+(:goal (and (forall (?x - object) (AUX6 ?x)) (not (updating))))
 )

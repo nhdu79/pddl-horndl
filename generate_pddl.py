@@ -12,6 +12,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent / "code"))
 from compilation import compile_pddl  # noqa: E402
 from rewriting.tseitin import tseitin_pddl  # noqa: E402
 from utils.parser_wrapper import validate_pddl  # noqa: E402
+from utils.timer import Timer  # noqa: E402
 
 # ──────────────────────────────────────────────────────────────────────────────
 # External tool paths — first existing candidate is used automatically
@@ -212,6 +213,7 @@ def compile_instance(
     variant: Optional[str],
     task: str,
     element: str,
+    tseitin_mode: str = "both",
 ) -> None:
     owl = owl_path(fragment, task, element)
     in_domain = domain_path(fragment, task, element)
@@ -220,9 +222,14 @@ def compile_instance(
         fragment, variant, task, element
     )
 
-    # Ensure output directories exist
-    for path in (out_domain, out_problem, ts_domain, ts_problem):
+    do_tseitin = tseitin_mode in ("only", "both")
+
+    # Ensure output directories exist; tseitin dirs only needed when tseitin runs.
+    for path in (out_domain, out_problem):
         Path(path).parent.mkdir(parents=True, exist_ok=True)
+    if do_tseitin:
+        for path in (ts_domain, ts_problem):
+            Path(path).parent.mkdir(parents=True, exist_ok=True)
 
     compile_kwargs: dict = dict(
         ontology=owl,
@@ -252,25 +259,46 @@ def compile_instance(
             incompatible_update_pred_type=config.incompatible_update_pred_type,
         )
 
-    compile_pddl(**compile_kwargs)
-
-    tseitin_pddl(
-        in_domain=out_domain,
-        in_problem=out_problem,
-        out_domain=ts_domain,
-        out_problem=ts_problem,
-        keep_name=True,
+    timer_output = compile_kwargs.get("timer_output", "result.csv")
+    compile_pddl(
+        **compile_kwargs,
+        fragment=fragment,
+        variant=variant or "",
+        task=task,
+        element=element,
+        tseitin=False,
     )
 
+    if do_tseitin:
+        with Timer(
+            "tseitin",
+            block=True,
+            file=timer_output,
+            fragment=fragment,
+            variant=variant or "",
+            task=task,
+            element=element,
+            tseitin=True,
+        ):
+            tseitin_pddl(
+                in_domain=out_domain,
+                in_problem=out_problem,
+                out_domain=ts_domain,
+                out_problem=ts_problem,
+                keep_name=True,
+            )
+
     val = _try_resolve("VAL Parser", _PARSER_CANDIDATES)
-    if val is None:
-        print("Skipping validation: VAL Parser not found. Add its path to _PARSER_CANDIDATES.", file=sys.stderr)
+    if val is not None:
+        if tseitin_mode in ("none", "both"):
+            validate_pddl(out_domain, out_problem, val)
+        if do_tseitin:
+            validate_pddl(ts_domain, ts_problem, val)
     else:
-        validate_pddl(out_domain, out_problem, val)
-        validate_pddl(ts_domain, ts_problem, val)
+        print("Skipping validation: VAL Parser not found. Add its path to _PARSER_CANDIDATES.", file=sys.stderr)
 
 
-def parse_args() -> tuple[list[str], list[str], list[str], bool]:
+def parse_args() -> tuple[list[str], list[str], list[str], bool, str]:
     parser = argparse.ArgumentParser(
         description="Generate compiled PDDL benchmarks.",
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -329,6 +357,15 @@ def parse_args() -> tuple[list[str], list[str], list[str], bool]:
         action="store_true",
         help="run all tasks supported by each fragment",
     )
+    parser.add_argument(
+        "--tseitin",
+        choices=["none", "only", "both"],
+        default="both",
+        help=(
+            "which outputs to produce: 'none' = no-tseitin only, "
+            "'only' = tseitin only, 'both' = both (default: both)"
+        ),
+    )
     args = parser.parse_args()
 
     fragments = ALL_FRAGMENTS if args.all_fragments else args.fragments
@@ -342,11 +379,11 @@ def parse_args() -> tuple[list[str], list[str], list[str], bool]:
     tasks = ALL_TASKS if args.all_tasks else args.tasks
     # filter_tasks: when True, main() restricts each fragment to its supported tasks.
     filter_tasks = args.all_tasks
-    return fragments, variants, tasks, filter_tasks
+    return fragments, variants, tasks, filter_tasks, args.tseitin
 
 
 def main() -> None:
-    fragments, variants, tasks, filter_tasks = parse_args()
+    fragments, variants, tasks, filter_tasks, tseitin_mode = parse_args()
     for fragment in fragments:
         # "ekab" has no update semantics — no variant dimension applies.
         effective_variants: list[Optional[str]] = [None] if fragment == "ekab" else variants
@@ -357,7 +394,7 @@ def main() -> None:
                 for element in TASK_ELEMENTS[task]:
                     label = f"{fragment}/{variant}" if variant else fragment
                     print(f"  [{label}] {task} / {element}")
-                    compile_instance(fragment, variant, task, element)
+                    compile_instance(fragment, variant, task, element, tseitin_mode=tseitin_mode)
 
 
 if __name__ == "__main__":

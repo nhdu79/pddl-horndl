@@ -40,6 +40,11 @@ python3 generate_pddl.py --fragments horn --variants var0 var1 --tasks blocks ro
 # (--all-fragments implies var0+var3 for core/horn; --all-tasks filters tasks per fragment)
 python3 generate_pddl.py --all-fragments --all-tasks
 
+# Control Tseitin output (default: both)
+python3 generate_pddl.py --tseitin none   # no-tseitin output only
+python3 generate_pddl.py --tseitin only   # tseitin output only
+python3 generate_pddl.py --tseitin both   # both (default)
+
 # Single test case (edit test.sh variables: task, semantics, i, update)
 bash test.sh
 
@@ -86,7 +91,7 @@ Set `PYTHONPATH=code` when calling scripts under `code/` directly. `generate_pdd
 
 `BENCHMARK_VARIANTS = ["var0", "var3"]` — the subset used when `--all-fragments` is active.
 
-Output goes to `benchmarks/outputs/<fragment>/<variant>/<task>_no_tseitin/` and `<task>_tseitin/` for `core`/`horn`, and `benchmarks/outputs/ekab/<task>_no_tseitin/` for `ekab`.
+Output goes to `benchmarks/outputs/<fragment>/<variant>/<task>_no_tseitin/` and `<task>_tseitin/` for `core`/`horn`, and `benchmarks/outputs/ekab/<task>_no_tseitin/` for `ekab`. The `--tseitin {none,only,both}` flag controls which of the two output variants are produced (default: `both`).
 
 ## Code architecture
 
@@ -133,7 +138,7 @@ code/
 │   ├── runners/             # UpdateRunner classes
 │   │   ├── __init__.py      # make_update_runner() factory + re-exports
 │   │   ├── base.py          # UpdateRunner ABC
-│   │   ├── core.py          # CoreUpdateRunner — calls Nemo for DL-Lite Core TBox closure
+│   │   ├── core.py          # CoreUpdateRunner — calls Nemo for DL-Lite Core TBox closure; filter_non_reachable_predicates
 │   │   └── horn.py          # HornUpdateRunner — builds rules from OWL directly; filter_non_reachable_predicates
 │   ├── classes/
 │   │   ├── inclusion.py     # Inclusion dataclass + INCLUSION_TYPES_ORDER

@@ -3,5 +3,5 @@
 (:init
        (developer c)
        (designer d))
-(:goal (and (AUX80) (not (updating))))
+(:goal (and (AUX69) (not (updating))))
 )

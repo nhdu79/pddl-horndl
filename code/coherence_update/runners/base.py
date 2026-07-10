@@ -43,6 +43,5 @@ class UpdateRunner(ABC):
         """
         Return (kept_rules, kept) where kept_rules is the list of reachable rules and kept is
         a list of Predicate objects for all reachable base concepts and roles (with correct
-        arity encoded in their parameters). Returns (rules, None) when no filtering is applied
-        (Core fragment).
+        arity encoded in their parameters). Returns (rules, None) when no filtering is applied.
         """

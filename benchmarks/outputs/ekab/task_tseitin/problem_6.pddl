@@ -4,5 +4,5 @@
        (engineer a)
        (developer b)
        (developer e))
-(:goal (and (AUX12) (not (DATALOG_INCONSISTENT))))
+(:goal (and (AUX8) (not (DATALOG_INCONSISTENT))))
 )

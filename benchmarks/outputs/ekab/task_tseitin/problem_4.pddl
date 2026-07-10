@@ -3,5 +3,5 @@
 (:init
        (designer a)
        (engineer d))
-(:goal (and (AUX12) (not (DATALOG_INCONSISTENT))))
+(:goal (and (AUX9) (not (DATALOG_INCONSISTENT))))
 )

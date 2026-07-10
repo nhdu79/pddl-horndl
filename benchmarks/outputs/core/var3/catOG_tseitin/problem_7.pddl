@@ -13,5 +13,5 @@
        (contains e d)
        (contains j l)
        (contains g m))
-(:goal (and (forall (?x - object) (AUX16 ?x)) (not (updating))))
+(:goal (and (forall (?x - object) (AUX6 ?x)) (not (updating))))
 )

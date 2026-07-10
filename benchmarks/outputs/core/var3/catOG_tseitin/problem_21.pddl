@@ -37,5 +37,5 @@
        (contains ar al)
        (contains bb be)
        (contains bl af))
-(:goal (and (forall (?x - object) (AUX16 ?x)) (not (updating))))
+(:goal (and (forall (?x - object) (AUX6 ?x)) (not (updating))))
 )
