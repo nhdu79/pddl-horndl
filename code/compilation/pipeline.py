@@ -75,92 +75,84 @@ class Compiler:
             tseitin=self.tseitin,
         ):
             if self.update_runner:
-                with Timer("domain_extension", file=self.timer_output):
-                    self._extend_for_coherence_update()
+                self._extend_for_coherence_update()
 
-            with Timer("collecting_queries", file=self.timer_output):
-                self._apply_to_all_conditions(
-                    pddl.MinimalKnowledgeOperator, self.ucq_collector
-                )
+            self._apply_to_all_conditions(
+                pddl.MinimalKnowledgeOperator, self.ucq_collector
+            )
 
-            with Timer("rewriting", file=self.timer_output):
-                self._queries, unparameterized = prepare_queries(
-                    self.ucq_collector.ucqs
-                )
-                raw_rules = self._rewrite_via_clipper(self._queries)
+            self._queries, unparameterized = prepare_queries(
+                self.ucq_collector.ucqs
+            )
+            raw_rules = self._rewrite_via_clipper(self._queries)
 
-            with Timer("construct_initial_predicates", file=self.timer_output):
-                initial_predicates = self._collect_initial_predicates()
+            initial_predicates = self._collect_initial_predicates()
 
             if self.update_runner:
-                with Timer("construct_and_filter_raw_rules", file=self.timer_output):
-                    update_rules = self.update_runner.run()
-                    update_rules += self._missing_predicate_rules()
-                    update_rules, kept = (
-                        self.update_runner.filter_non_reachable_predicates(
-                            update_rules, self.domain.actions, initial_predicates
-                        )
+                update_rules = self.update_runner.run()
+                update_rules += self._missing_predicate_rules()
+                update_rules, kept = (
+                    self.update_runner.filter_non_reachable_predicates(
+                        update_rules, self.domain.actions, initial_predicates
                     )
-                    if kept is not None:
-                        raw_rules = _filter_raw_rules_from_reachable_predicates(
-                            raw_rules, kept
-                        )
-                        existing = {p.name for p in self.domain.predicates}
-                        for p in kept:
-                            if (
-                                p.name not in existing
-                                and not is_non_horn_aux_predicate_name(p.name)
-                            ):
-                                self.domain.predicates.append(p)
-                    construct_update_action(
-                        self.domain,
-                        self.update_runner.updating_pred_type,
-                        self.update_runner.incompatible_update_pred_type,
-                        horn=self._is_horn,
-                        kept=kept,
-                    )
-                    extend_problem_for_coherence_update(self.problem)
-                    raw_rules += update_rules
-            else:
-                with Timer("filter_ekab_rules", file=self.timer_output):
-                    raw_rules, _ = _filter_raw_rules_for_ekab(
-                        raw_rules, self.domain.actions, initial_predicates
-                    )
-
-            with Timer("gen_derived_predicates", file=self.timer_output):
-                self._adapt_predicate_names_to_clipper()
-                self._collect_predicate_information()
-                self._datalog_rules, self._duplicate_rules = _parse_datalog_rules(
-                    raw_rules,
-                    unparameterized,
-                    self.update_runner,
-                    self.filter_duplicates,
-                    self.expensive_duplicate_filtering,
                 )
-                if self.filter_unimportant_atoms:
-                    self._datalog_rules, self._unimportant_rules = (
-                        _filter_irrelevant_rules(
-                            self._datalog_rules,
-                            self.ucq_collector.queried_predicates,
-                            len(self.ucq_collector.ucqs),
-                            self.update_runner,
-                        )
+                if kept is not None:
+                    raw_rules = _filter_raw_rules_from_reachable_predicates(
+                        raw_rules, kept
                     )
-                else:
-                    self._unimportant_rules = []
-                if (
-                    self.update_runner
-                    and self.update_runner.incompatible_update_pred_type
-                    == COMPATIBLE_UPDATE
-                ):
-                    self._datalog_rules, compatible_update = (
-                        transform_incompatible_update(self._datalog_rules)
-                    )
-                    self.domain.derived_predicates.append(compatible_update)
-                self._compile_datalog_rules()
+                    existing = {p.name for p in self.domain.predicates}
+                    for p in kept:
+                        if (
+                            p.name not in existing
+                            and not is_non_horn_aux_predicate_name(p.name)
+                        ):
+                            self.domain.predicates.append(p)
+                construct_update_action(
+                    self.domain,
+                    self.update_runner.updating_pred_type,
+                    self.update_runner.incompatible_update_pred_type,
+                    horn=self._is_horn,
+                    kept=kept,
+                )
+                extend_problem_for_coherence_update(self.problem)
+                raw_rules += update_rules
+            else:
+                raw_rules, _ = _filter_raw_rules_for_ekab(
+                    raw_rules, self.domain.actions, initial_predicates
+                )
 
-            with Timer("finalizing", file=self.timer_output):
-                self._unprime_conditions_and_enforce_consistency()
+            self._adapt_predicate_names_to_clipper()
+            self._collect_predicate_information()
+            self._datalog_rules, self._duplicate_rules = _parse_datalog_rules(
+                raw_rules,
+                unparameterized,
+                self.update_runner,
+                self.filter_duplicates,
+                self.expensive_duplicate_filtering,
+            )
+            if self.filter_unimportant_atoms:
+                self._datalog_rules, self._unimportant_rules = (
+                    _filter_irrelevant_rules(
+                        self._datalog_rules,
+                        self.ucq_collector.queried_predicates,
+                        len(self.ucq_collector.ucqs),
+                        self.update_runner,
+                    )
+                )
+            else:
+                self._unimportant_rules = []
+            if (
+                self.update_runner
+                and self.update_runner.incompatible_update_pred_type
+                == COMPATIBLE_UPDATE
+            ):
+                self._datalog_rules, compatible_update = (
+                    transform_incompatible_update(self._datalog_rules)
+                )
+                self.domain.derived_predicates.append(compatible_update)
+            self._compile_datalog_rules()
+
+            self._unprime_conditions_and_enforce_consistency()
 
     # -------------------------------------------------------------------------
     # Pipeline steps

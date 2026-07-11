@@ -3,6 +3,7 @@
 
 import argparse
 import sys
+import time
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
@@ -259,7 +260,8 @@ def compile_instance(
             incompatible_update_pred_type=config.incompatible_update_pred_type,
         )
 
-    timer_output = compile_kwargs.get("timer_output", "result.csv")
+    timer_output = compile_kwargs.get("timer_output", "results.csv")
+    t_compile_start = time.time()
     compile_pddl(
         **compile_kwargs,
         fragment=fragment,
@@ -268,6 +270,7 @@ def compile_instance(
         element=element,
         tseitin=False,
     )
+    compile_elapsed = time.time() - t_compile_start
 
     if do_tseitin:
         with Timer(
@@ -279,6 +282,7 @@ def compile_instance(
             task=task,
             element=element,
             tseitin=True,
+            extra_time=compile_elapsed,
         ):
             tseitin_pddl(
                 in_domain=out_domain,
