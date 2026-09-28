@@ -28,7 +28,7 @@ from coherence_update.rules.symbols import (
 from coherence_update.runners.base import UpdateRunner
 from utils.timer import Timer
 from coherence_update.core_update import CoherenceUpdate
-from utils.helpers import get_repr, parse_name, read_predicates, read_unary_predicate
+from utils.helpers import get_repr, read_predicates, read_unary_predicate
 from variant_options import DERIVED_PREDICATE
 from pddl.logic import Predicate, TypedList
 
@@ -39,22 +39,6 @@ RULES_FILE_NAME = "_update_rules.txt"
 # Core compound names are built as <prefix><base><suffix>, e.g. ins_hasParent_request.
 _PREFIXES = (INS, DEL)
 _SUFFIXES = (REQUEST, CLOSURE)
-
-
-def _normalize_pred_name(name: str) -> str:
-    """Apply parse_name to the base of a compound predicate name, preserving any
-    ins_/del_ prefix and _request/_closure suffix."""
-    prefix, body = "", name
-    for p in _PREFIXES:
-        if body.startswith(p):
-            prefix, body = p, body[len(p):]
-            break
-    suffix = ""
-    for s in _SUFFIXES:
-        if body.endswith(s):
-            suffix, body = s, body[: -len(s)]
-            break
-    return prefix + parse_name(body) + suffix
 
 
 def _predicate_from_rule_head(head_str: str) -> Predicate:
@@ -82,11 +66,7 @@ def _predicate_from_tail_atom(atom_name: str, tail: str) -> Predicate:
     return Predicate(atom_name, [TypedList(["?x0"])])
 
 
-# Compared against already-normalized names, so normalize these too (e.g.
-# "incompatible_update" -> "incompatibleupdate" since parse_name strips underscores).
-_CONTROL_PREDICATE_NAMES = tuple(
-    _normalize_pred_name(n) for n in (UPDATING, INCOMPATIBLE_UPDATE, COMPATIBLE_UPDATE)
-)
+_CONTROL_PREDICATE_NAMES = (UPDATING, INCOMPATIBLE_UPDATE, COMPATIBLE_UPDATE)
 
 
 def _is_base_pred_name(name: str) -> bool:
@@ -197,17 +177,13 @@ class CoreUpdateRunner(UpdateRunner):
         for action in actions:
             _collect_effect_predicates(action.effect, seed_predicates)
 
-        kept_predicates: dict = {
-            _normalize_pred_name(k): Predicate(_normalize_pred_name(k), v.parameters)
-            for k, v in seed_predicates.items()
-        }
+        kept_predicates: dict = dict(seed_predicates)
 
         # Seed from initial state facts: predicates that hold in the initial state
         # may appear in ontology rule bodies, so they must be reachable.
         if initial_predicates:
             for pred in initial_predicates:
-                name = _normalize_pred_name(pred.name)
-                kept_predicates.setdefault(name, Predicate(name, pred.parameters))
+                kept_predicates.setdefault(pred.name, pred)
 
         # An ins_X_request/del_X_request seed implies the base predicate X is also
         # reachable, since the corresponding ins_X/del_X rule tests X(...) directly.
@@ -236,12 +212,12 @@ class CoreUpdateRunner(UpdateRunner):
                     rf"({re.escape(NOT)}?)([A-Za-z][A-Za-z0-9_]*)\(", tail
                 )
                 positive_names = {
-                    _normalize_pred_name(n) for neg, n in atoms if not neg
+                    n for neg, n in atoms if not neg
                 }
                 if positive_names and positive_names.issubset(kept_predicates):
                     kept_rules.append(rule_str)
                     raw_head = _predicate_from_rule_head(rule_str[:sep_idx].strip())
-                    head_name = _normalize_pred_name(raw_head.name)
+                    head_name = raw_head.name
                     head_pred = Predicate(head_name, raw_head.parameters)
                     new_predicates[head_name] = head_pred
                     # ins_X / del_X (without a _request/_closure suffix) reachability
@@ -258,7 +234,7 @@ class CoreUpdateRunner(UpdateRunner):
                     # Negated body atoms must also be declared in the domain.
                     for neg, neg_name in atoms:
                         if neg:
-                            norm_neg = _normalize_pred_name(neg_name)
+                            norm_neg = neg_name
                             if norm_neg not in kept_predicates:
                                 new_predicates[norm_neg] = _predicate_from_tail_atom(
                                     norm_neg, tail

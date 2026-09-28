@@ -1,22 +1,3 @@
-from owl.expressions import (
-    AND_SEP,
-    AtomicConcept,
-    AtomicRole,
-    ConceptExpression,
-    EXISTENTIAL_PREFIX,
-    ExistentialConcept,
-    INVERSE_EXISTENTIAL_PREFIX,
-    INVERSE_PREFIX,
-    IntersectionConcept,
-    InverseExistentialConcept,
-    InverseRole,
-    NegatedConcept,
-    NegatedRole,
-    NOT_PREFIX,
-    OWL_NOTHING,
-    OWL_THING,
-    RoleExpression,
-)
 from owl.axioms import (
     ConceptInclusion,
     FunctionalRole,
@@ -24,8 +5,30 @@ from owl.axioms import (
     Ontology,
     RoleInclusion,
 )
+from owl.expressions import (
+    AND_SEP,
+    EXISTENTIAL_PREFIX,
+    INVERSE_EXISTENTIAL_PREFIX,
+    INVERSE_PREFIX,
+    NOT_PREFIX,
+    OWL_NOTHING,
+    OWL_THING,
+    AtomicConcept,
+    AtomicRole,
+    ConceptExpression,
+    ExistentialConcept,
+    IntersectionConcept,
+    InverseExistentialConcept,
+    InverseRole,
+    NegatedConcept,
+    NegatedRole,
+    RoleExpression,
+)
 from owl.parser import parse_owl
-from owl.saturation import normalize_negative_concept_inclusions, saturate_role_inclusions
+from owl.saturation import (
+    normalize_negative_concept_inclusions,
+    saturate_role_inclusions,
+)
 
 __all__ = [
     # expression ID constants

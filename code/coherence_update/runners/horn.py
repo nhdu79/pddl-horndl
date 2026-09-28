@@ -19,17 +19,11 @@ from coherence_update.rules.horn.strata import (
     build_updating_rules_for_roles,
 )
 from coherence_update.rules.symbols import (
-    A_OR_AP_CL,
     ADEL,
-    AP_CL,
     APLUS,
     DEL,
-    DEL_CL,
     INS,
-    INS_CL,
-    MIN_X_IN_TAU,
     NOT,
-    PRE_INS,
     RULE_SEPARATOR,
 )
 from coherence_update.runners.base import UpdateRunner
@@ -49,31 +43,6 @@ from owl import (
     saturate_role_inclusions,
 )
 from pddl.logic import Predicate, TypedList
-from utils.helpers import parse_name
-
-# Compound-predicate prefixes used by the strata rules, ordered longest-first
-# so that startswith() checks are unambiguous (no prefix is a prefix of another).
-_COMPOUND_PREFIXES = (
-    A_OR_AP_CL,  # "AOrApCl_"
-    PRE_INS,     # "PreInsCl_"
-    INS_CL,      # "InsCl_"
-    DEL_CL,      # "DelCl_"
-    AP_CL,       # "ApCl_"
-    MIN_X_IN_TAU,# "Min_"
-    APLUS,       # "Ap_"
-    ADEL,        # "Am_"
-    INS,         # "ins_"
-    DEL,         # "del_"
-)
-
-
-def _normalize_pred_name(name: str) -> str:
-    """Apply parse_name to the base of a compound predicate name, preserving the prefix."""
-    for prefix in _COMPOUND_PREFIXES:
-        if name.startswith(prefix):
-            return prefix + parse_name(name[len(prefix):])
-    return parse_name(name)
-
 
 def _predicate_from_rule_head(head_str: str) -> Predicate:
     """Build a Predicate from a Datalog rule head like 'PredName(X,Y)', using canonical ?x0,?x1,... params."""
@@ -206,28 +175,22 @@ class HornUpdateRunner(UpdateRunner):
         for action in actions:
             _collect_effect_predicates(action.effect, seed_predicates)
 
-        # Normalize all seed names so they agree with the expression IDs used in
-        # rule strings (prefix preserved, base part run through parse_name).
-        kept_predicates: dict = {
-            _normalize_pred_name(k): Predicate(_normalize_pred_name(k), v.parameters)
-            for k, v in seed_predicates.items()
-        }
+        kept_predicates: dict = dict(seed_predicates)
 
         # Seed from initial state facts: predicates that hold in the initial state
         # may appear in ontology rule bodies, so they must be reachable.
         if initial_predicates:
             for pred in initial_predicates:
-                name = _normalize_pred_name(pred.name)
-                kept_predicates.setdefault(name, Predicate(name, pred.parameters))
+                kept_predicates.setdefault(pred.name, pred)
 
         # Strip Ap_/Am_ to recover base predicate names with the same arity so
         # that rule 1 (AOrApCl_X :- X) is reachable alongside rule 2 (AOrApCl_X :- Ap_X).
         for name, pred in list(kept_predicates.items()):
             if name.startswith(APLUS):
-                base = parse_name(name[len(APLUS):])
+                base = name[len(APLUS):]
                 kept_predicates[base] = Predicate(base, pred.parameters)
             elif name.startswith(ADEL):
-                base = parse_name(name[len(ADEL):])
+                base = name[len(ADEL):]
                 kept_predicates.setdefault(base, Predicate(base, pred.parameters))
 
         # Reachability fixpoint: fire rules whose positive body atoms are all already
@@ -249,29 +212,29 @@ class HornUpdateRunner(UpdateRunner):
                     rf"({re.escape(NOT)}?)([A-Za-z][A-Za-z0-9_]*)\(", tail
                 )
                 positive_names = {
-                    _normalize_pred_name(n) for neg, n in atoms if not neg
+                    n for neg, n in atoms if not neg
                 }
                 if positive_names and positive_names.issubset(kept_predicates):
                     kept_rules.append(rule_str)
                     raw_head = _predicate_from_rule_head(rule_str[:sep_idx].strip())
-                    head_name = _normalize_pred_name(raw_head.name)
+                    head_name = raw_head.name
                     head_pred = Predicate(head_name, raw_head.parameters)
                     new_predicates[head_name] = head_pred
                     # ins_X / del_X reachability implies X itself is also needed.
                     if head_name.startswith(INS):
-                        base = parse_name(head_name[len(INS):])
+                        base = head_name[len(INS):]
                         new_predicates.setdefault(
                             base, Predicate(base, head_pred.parameters)
                         )
                     elif head_name.startswith(DEL):
-                        base = parse_name(head_name[len(DEL):])
+                        base = head_name[len(DEL):]
                         new_predicates.setdefault(
                             base, Predicate(base, head_pred.parameters)
                         )
                     # Negated body atoms must also be declared in the domain.
                     for neg, neg_name in atoms:
                         if neg:
-                            norm_neg = _normalize_pred_name(neg_name)
+                            norm_neg = neg_name
                             if norm_neg not in kept_predicates:
                                 new_predicates[norm_neg] = _predicate_from_tail_atom(
                                     norm_neg, tail

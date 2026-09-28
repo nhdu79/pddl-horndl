@@ -19,5 +19,5 @@
        (contains i h)
        (contains b u)
        (contains a v))
-(:goal (and (forall (?x - object) (AUX5 ?x)) (not (updating))))
+(:goal (and (forall (?x) (AUX2 ?x)) (not (updating))))
 )

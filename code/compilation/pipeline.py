@@ -17,9 +17,10 @@ from compilation.naming import (
     query_predicate_name,
     unprime_predicate_name,
 )
-from compilation.query_rewriter import prepare_queries
+from compilation.names import declare_for_clipper
+from compilation.query_rewriter import prepare_queries, query_atoms
 from compilation.ucq_collector import UCQCollector
-from utils.helpers import parse_name
+from utils.helpers import normalize_user_name
 from utils.timer import Timer
 from variant_options import COMPATIBLE_UPDATE, INCOMPATIBLE_UPDATE
 
@@ -29,6 +30,9 @@ from .datalog import (
     _filter_raw_rules_from_reachable_predicates,
     _parse_datalog_rules,
 )
+
+# Copy of the ontology that also declares the PDDL-only predicates of queries.
+TEMPORARY_DECLARED_ONTOLOGY = "__temp_clipper_declared.owl"
 
 
 class Compiler:
@@ -47,11 +51,13 @@ class Compiler:
         task=None,
         element=None,
         tseitin=None,
+        ontology_names=None,
     ):
         self.domain = domain
+        self.ontology_names = ontology_names
         self.problem = problem
         self.clipper = clipper
-        self.ucq_collector = UCQCollector(clipper)
+        self.ucq_collector = UCQCollector()
         self.filter_unimportant_atoms = filter_unimportant_atoms
         self.filter_duplicates = filter_duplicates
         self.expensive_duplicate_filtering = expensive_duplicate_filtering
@@ -74,6 +80,7 @@ class Compiler:
             element=self.element,
             tseitin=self.tseitin,
         ):
+            self._normalize_user_names()
             if self.update_runner:
                 self._extend_for_coherence_update()
 
@@ -82,7 +89,7 @@ class Compiler:
             )
 
             self._queries, unparameterized = prepare_queries(
-                self.ucq_collector.ucqs
+                self.ucq_collector.ucqs, self._clipper_spelling()
             )
             raw_rules = self._rewrite_via_clipper(self._queries)
 
@@ -121,7 +128,6 @@ class Compiler:
                     raw_rules, self.domain.actions, initial_predicates
                 )
 
-            self._adapt_predicate_names_to_clipper()
             self._collect_predicate_information()
             self._datalog_rules, self._duplicate_rules = _parse_datalog_rules(
                 raw_rules,
@@ -164,6 +170,32 @@ class Compiler:
             self.domain, self.update_runner.updating_pred_type, horn=self._is_horn
         )
 
+    def _clipper_spelling(self):
+        """Map query predicates to the exact names Clipper knows.
+
+        Clipper matches query atoms against the OWL local names
+        case-sensitively and silently drops unknown atoms, which would make the
+        query trivially true.  Ontology predicates are therefore written in
+        their OWL spelling; predicates the ontology does not declare are
+        declared in a copy of the ontology given to Clipper.
+        """
+        if self.ontology_names is None:
+            return lambda name: name
+        undeclared = {
+            name: arity
+            for name, arity in query_atoms(self.ucq_collector.ucqs).items()
+            if self.ontology_names.clipper_spelling(name) is None
+        }
+        if undeclared:
+            self.clipper.ontology_path = declare_for_clipper(
+                self.clipper.ontology_path, undeclared, TEMPORARY_DECLARED_ONTOLOGY
+            )
+
+        def spelling(name):
+            return self.ontology_names.clipper_spelling(name) or name
+
+        return spelling
+
     def _rewrite_via_clipper(self, queries):
         if self.clipper.supports_simultaneous_rewriting() and queries:
             rules = self.clipper.rewrite_all("\n".join("\n".join(qs) for qs in queries))
@@ -199,29 +231,28 @@ class Compiler:
         for pred in self.domain.predicates:
             if pred.name not in missing:
                 continue
-            name = parse_name(pred.name)
-            if len(pred.parameters) == 1:
+            name = pred.name
+            if pred.arity() == 1:
                 concepts.append(name)
-            elif len(pred.parameters) == 2:
+            elif pred.arity() == 2:
                 roles.append(name)
             else:
                 raise ValueError(f"Unexpected predicate arity for {pred.name!r}")
         return self.update_runner.run_for_missing_predicates(concepts, roles)
 
-    def _adapt_predicate_names_to_clipper(self):
+    def _normalize_user_names(self):
+        """Normalize every predicate name of the input task, once, up front.
+
+        From here on all user names are in normalized form (the form Clipper
+        also uses), so no later step needs to (or may) re-normalize names.
+        """
         for p in self.domain.predicates:
-            if is_coherence_update_predicate_name(p.name):
-                continue
-            p.name = self.clipper.adapt_predicate_name(p.name)
+            p.name = normalize_user_name(p.name)
+        for d in self.domain.derived_predicates:
+            d.predicate.name = normalize_user_name(d.predicate.name)
 
         def apply_to_fact(fact):
-            if is_primed_predicate_name(
-                fact.predicate
-            ) or is_coherence_update_predicate_name(fact.predicate):
-                return fact
-            return pddl.Fact(
-                self.clipper.adapt_predicate_name(fact.predicate), fact.parameters
-            )
+            return pddl.Fact(normalize_user_name(fact.predicate), fact.parameters)
 
         def apply_to_effect(eff):
             return eff.__class__(apply_to_fact(eff.fact))
@@ -245,10 +276,7 @@ class Compiler:
                 and COMPATIBLE_UPDATE in self.predicates
             ), "incompatible_update should not be in predicates"
 
-        self.predicate_arity = {
-            p.name: sum(len(tl.elements) for tl in p.parameters)
-            for p in self.domain.predicates
-        }
+        self.predicate_arity = {p.name: p.arity() for p in self.domain.predicates}
         self.num_derived_predicates = len(self.domain.derived_predicates)
 
     def _compile_datalog_rules(self):

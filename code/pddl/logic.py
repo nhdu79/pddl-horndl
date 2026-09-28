@@ -331,7 +331,7 @@ class Exists(LogicBaseClass):
         return Exists(self.parameters, self.formula.instantiate(new_objects))
     def is_satisfied_by_state(self, objects, state):
         params = [ x for tl in self.parameters for x in tl.elements ]
-        obj_list = [ objects[tl.type] for tl in self.parameters for x in tl.elements ]
+        obj_list = [ objects[tl.type or "object"] for tl in self.parameters for x in tl.elements ]
         for selection in itertools.product(*obj_list):
             ground = self.formula.instantiate({params[i]: selection[i] for i in range(len(params))})
             if ground.is_satisfied_by_state(objects, state):
@@ -381,7 +381,7 @@ class Forall(LogicBaseClass):
         return Forall(self.parameters, self.formula.instantiate(new_objects))
     def is_satisfied_by_state(self, objects, state):
         params = [ x for tl in self.parameters for x in tl.elements ]
-        obj_list = [ objects[tl.type] for tl in self.parameters for x in tl.elements ]
+        obj_list = [ objects[tl.type or "object"] for tl in self.parameters for x in tl.elements ]
         for selection in itertools.product(*obj_list):
             ground = self.formula.instantiate({params[i]: selection[i] for i in range(len(params))})
             if not ground.is_satisfied_by_state(objects, state):
@@ -696,7 +696,7 @@ class ForallEffect(TraversableBaseClass):
         adds = set()
         dels = set()
         params = [ x for tl in self.parameters for x in tl.elements ]
-        obj_list = [ objects[tl.type] for tl in self.parameters for x in tl.elements ]
+        obj_list = [ objects[tl.type or "object"] for tl in self.parameters for x in tl.elements ]
         for selection in itertools.product(*obj_list):
             ground = self.effect.instantiate({params[i]: selection[i] for i in range(len(params))})
             (a, b) = ground.get_effects(objects, state)
@@ -710,7 +710,9 @@ class ForallEffect(TraversableBaseClass):
     TypedList: type is optional; which creates Predicates of same type
 """
 class TypedList:
-    def __init__(self, elements, typ = "object"):
+    # typ=None means "untyped": no "- type" suffix is printed, so compiled
+    # domains stay free of an implicit (and undeclared) "object" type.
+    def __init__(self, elements, typ = None):
         self.elements = elements
         self.type = typ
     def __str__(self):
@@ -821,6 +823,12 @@ class Predicate:
         return "(%s)" % " ".join(res)
     def __repr__(self):
         return "%s(%s, %r)" % (self.__class__.__name__, self.name, self.parameters)
+    def variables(self):
+        # Flattened parameter names; a typed signature such as
+        # (on ?x - block ?y - table) has two TypedLists but arity 2.
+        return [x for tl in self.parameters for x in tl.elements]
+    def arity(self):
+        return len(self.variables())
 
 class Function(Predicate):
     def __init__(self, *args, **kwargs):

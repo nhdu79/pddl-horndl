@@ -16,14 +16,14 @@ Output PDDL is then run through **Fast Downward**.
 
 ## External dependencies
 
-External tools are auto-detected from candidate path lists near the top of `generate_pddl.py`. Add your machine's paths to the relevant list if not already present:
+External tools are resolved by `code/utils/tools.py` in this order: command-line option (`--clipper`, `--nmo`, `--val`) > `[tools]` table of `tools.toml` in the repo root (git-ignored; template: `tools.example.toml`; override with `--config`) > the executable name on `PATH`. An explicit path that does not exist is an error.
 
-| Tool | Candidate list | Notes |
-|------|----------------|-------|
-| Clipper (patched) | `CLIPPER` | Apply both patches in `patches/` before building; required for all runs |
-| Nemo binary (`nmo`) | `_NMO_CANDIDATES` | v0.6.0 used in experiments; required for `core` fragment only |
-| Fast Downward | `FAST_DOWNWARD` | Standard installation |
-| VAL Parser | `_PARSER_CANDIDATES` | Optional — PDDL validation; skipped gracefully when not found |
+| Tool | Config key / PATH name | Notes |
+|------|------------------------|-------|
+| Clipper (patched) | `clipper` / `clipper.sh` | Apply both patches in `patches/` (`git am`) before building; required for all runs. Failures raise `ClipperError` |
+| Nemo binary | `nmo` / `nmo` | v0.6.0 used in experiments; required for `core` fragment only |
+| VAL Parser | `val` / `Parser` | Optional — PDDL validation; skipped gracefully when not found |
+| Fast Downward | — | Not used by the scripts; run it on the outputs yourself |
 
 Python dependency: **rdflib** (used by `code/owl/` for OWL Turtle parsing). Install into the `.venv` with `pip install rdflib`.
 
@@ -51,21 +51,21 @@ bash test.sh
 # Manual single compilation — no coherence update (ekab semantics)
 PYTHONPATH=code python3 -m compilation <ontology.owl> <domain.pddl> <problem.pddl> \
   -d out_domain.pddl -p out_problem.pddl \
-  --clipper /path/to/clipper.sh --clipper-mqf
+  --clipper-mqf   # --clipper PATH optional (tools.toml / PATH)
 
 # With coherence update — core fragment (uses Nemo)
 PYTHONPATH=code python3 -m compilation <ontology.owl> <domain.pddl> <problem.pddl> \
   -d out_domain.pddl -p out_problem.pddl \
-  --clipper /path/to/clipper.sh --clipper-mqf \
+  --clipper-mqf \
   --dl-lite-fragment core \
-  --rls code/nemo/t_closure.rls --nmo /path/to/nmo \
+  --rls code/nemo/t_closure.rls \
   --updating-pred-type derived_predicate \
   --incompatible-update-pred-type incompatible_update
 
 # With coherence update — horn fragment (uses Python OWL parser, no Nemo needed)
 PYTHONPATH=code python3 -m compilation <ontology.owl> <domain.pddl> <problem.pddl> \
   -d out_domain.pddl -p out_problem.pddl \
-  --clipper /path/to/clipper.sh --clipper-mqf \
+  --clipper-mqf \
   --dl-lite-fragment horn \
   --updating-pred-type derived_predicate \
   --incompatible-update-pred-type incompatible_update
@@ -111,7 +111,8 @@ code/
 │   ├── ontology.py          # construct_ontology_for_clipper() — extends OWL for Horn fragment
 │   ├── ucq_collector.py     # UCQCollector: walks PDDL AST, extracts UCQs, replaces with primed query facts
 │   ├── query_rewriter.py    # Query rewriting utilities
-│   ├── utils.py             # Predicate naming conventions (prime_, query_, is_update_, etc.)
+│   ├── naming.py            # Predicate naming conventions (prime_, query_, is_update_, etc.)
+│   ├── names.py             # check_names() / NameClashError, OntologyNames (Clipper spelling), declare_for_clipper
 │   └── variant_options.py   # UPDATING_PREDICATE_TYPES / INCOMPATIBLE_UPDATE_PREDICATE_TYPES dicts
 ├── rewriting/
 │   ├── clipper.py           # Clipper wrapper: calls clipper.sh subprocess, parses Datalog output
@@ -155,12 +156,19 @@ code/
 │   ├── t_closure.rls        # Nemo Datalog rules for transitive closure computation
 │   └── fact_counter.rls
 └── utils/
-    ├── functions.py         # parse_name, read_predicates, get_repr helpers
+    ├── helpers.py           # normalize_user_name, read_predicates, get_repr helpers
+    ├── tools.py             # external tool lookup: CLI option > tools.toml > PATH
     ├── parser_wrapper.py    # validate_pddl() — calls VAL Parser for PDDL validation
     └── pretty_print_condition.py
 ```
 
 ### Key naming conventions in the codebase
+
+- **User names vs generated names**: every user name (PDDL predicate, OWL concept/role) is normalized exactly once by `normalize_user_name()` (lowercase, only `[a-z0-9]`, matching Clipper's output) in `Compiler._normalize_user_names()`, the first pipeline step. Generated names contain `_` or are uppercase, so they cannot collide with user names. The one exception is the horn `exists<role>`/`existsinv<role>` concepts: they pass through Clipper, which strips `_`, so `check_names` reserves them instead. **Never normalize a generated name** (it would mangle `PreInsCl_a_sub_b`), and never add a generated name without `_`/uppercase. `compilation/names.py` checks the input up front (`check_names`) and maps names to Clipper's exact OWL spelling for queries.
+- **Clipper name handling** (verified on the patched build; see FIXES.md):
+  - *Input is case-sensitive*: query atoms are resolved against the OWL IRIs exactly, and unknown atoms are **silently dropped** (an empty body makes the query trivially true). Hence `OntologyNames.clipper_spelling()` and `declare_for_clipper()`.
+  - *Output is lowercased*, with `_`/`-` removed (`CQFormatter`, strategy `LOWER_CASE_FRAGMENT`), for `#` and `/` IRIs alike. Query heads (`QUERY<i>`) keep their case. Other characters such as `.` are kept, which is why `check_names` rejects them in OWL names.
+  - The CLI option `-name FRAGMENT` (keep case) has **no effect**: `QAHornSHIQ` builds its formatter in the constructor, and `setNamingStrategy()` never rebuilds it (upstream bug). Don't rely on it.
 
 - **Primed predicates** (`prime_predicate_name`): ontology-derived predicates get a prime suffix; they represent the "derived" version that is inferred, while the unprimed name is the planning-visible predicate.
 - **Query predicates** (`QUERY_N`): each UCQ extracted from the PDDL gets a fresh `QUERY_<index>` name; these become derived predicates in the output domain.

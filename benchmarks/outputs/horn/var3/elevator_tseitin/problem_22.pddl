@@ -31,5 +31,5 @@
        (next q s)
        (next s t)
        (liftat n))
-(:goal (and (forall (?x - object) (AUX7 ?x)) (not (updating))))
+(:goal (and (forall (?x) (AUX7 ?x)) (not (updating))))
 )

@@ -20,8 +20,7 @@ from dataclasses import dataclass
 from typing import Union
 
 from rdflib.namespace import OWL
-
-from utils.helpers import parse_name
+from utils.helpers import normalize_user_name
 
 # ---------------------------------------------------------------------------
 # Naming constants — used to build compound expression IDs and importable
@@ -39,22 +38,24 @@ def _local_name(iri: str) -> str:
     """Return the normalised local name of an IRI.
 
     Extracts the fragment (after #) or last path segment (after /), then
-    applies parse_name — the same transformation used by Clipper and Compiler
+    applies normalize_user_name — the same transformation used by Clipper and Compiler
     so that all three components agree on predicate names.
     """
     for sep in ("#", "/"):
         if sep in iri:
-            return parse_name(iri.rsplit(sep, 1)[-1])
-    return parse_name(iri)
+            return normalize_user_name(iri.rsplit(sep, 1)[-1])
+    return normalize_user_name(iri)
 
 
 # ---------------------------------------------------------------------------
 # Concept expressions
 # ---------------------------------------------------------------------------
 
+
 @dataclass(frozen=True)
 class AtomicConcept:
     """Named (atomic) concept — concept(?X), atomic(?X) in t_closure.rls."""
+
     iri: str
 
     @property
@@ -68,6 +69,7 @@ class AtomicConcept:
 @dataclass(frozen=True)
 class ExistentialConcept:
     """∃P.⊤ — domain concept of role P; corresponds to domOf nodes in t_closure.rls."""
+
     role: "AtomicRole"
 
     @property
@@ -81,6 +83,7 @@ class ExistentialConcept:
 @dataclass(frozen=True)
 class InverseExistentialConcept:
     """∃P⁻.⊤ — range concept of role P; corresponds to rngOf nodes in t_closure.rls."""
+
     role: "AtomicRole"
 
     @property
@@ -94,6 +97,7 @@ class InverseExistentialConcept:
 @dataclass(frozen=True)
 class NegatedConcept:
     """¬X — negation of any concept expression; corresponds to negOf nodes in t_closure.rls."""
+
     concept: "ConceptExpression"
 
     @property
@@ -107,6 +111,7 @@ class NegatedConcept:
 @dataclass(frozen=True)
 class IntersectionConcept:
     """X₁ ⊓ … ⊓ Xₙ — conjunction of concepts (Horn DL-Lite); from owl:intersectionOf."""
+
     operands: tuple  # tuple[ConceptExpression, ...]
 
     @property
@@ -133,9 +138,11 @@ OWL_NOTHING = AtomicConcept(str(OWL.Nothing))
 # Role expressions
 # ---------------------------------------------------------------------------
 
+
 @dataclass(frozen=True)
 class AtomicRole:
     """Named (atomic) role — role(?P), atomic(?P) in t_closure.rls."""
+
     iri: str
 
     @property
@@ -149,6 +156,7 @@ class AtomicRole:
 @dataclass(frozen=True)
 class InverseRole:
     """P⁻ — inverse of a role; corresponds to invOf nodes in t_closure.rls."""
+
     role: AtomicRole
 
     @property
@@ -162,6 +170,7 @@ class InverseRole:
 @dataclass(frozen=True)
 class NegatedRole:
     """¬P — negation of a role; corresponds to negOf nodes for roles in t_closure.rls."""
+
     role: AtomicRole | InverseRole
 
     @property

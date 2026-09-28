@@ -14,56 +14,19 @@ from compilation import compile_pddl  # noqa: E402
 from rewriting.tseitin import tseitin_pddl  # noqa: E402
 from utils.parser_wrapper import validate_pddl  # noqa: E402
 from utils.timer import Timer  # noqa: E402
+from utils.tools import find_tool, load_config, require_tool  # noqa: E402
 
 # ──────────────────────────────────────────────────────────────────────────────
-# External tool paths — first existing candidate is used automatically
+# External tools — resolved in main(): CLI argument > tools.toml > PATH
 # ──────────────────────────────────────────────────────────────────────────────
 
 
-def _resolve(name: str, candidates: list[str]) -> str:
-    for path in candidates:
-        if Path(path).exists():
-            return path
-    raise FileNotFoundError(
-        f"{name} not found. Searched:\n" + "\n".join(f"  {p}" for p in candidates)
-    )
+@dataclass(frozen=True)
+class Tools:
+    clipper: str
+    nmo: Optional[str]  # only needed for the "core" fragment
+    val: Optional[str]  # optional; validation is skipped without it
 
-
-CLIPPER = _resolve(
-    "Clipper",
-    [
-        "/home/zinzin2312/repos/clipper/clipper-distribution/target/clipper/clipper.sh",
-        "/Users/duynhu/repos/clipper/clipper-distribution/target/clipper/clipper.sh",
-    ],
-)
-
-
-def _try_resolve(name: str, candidates: list[str]) -> Optional[str]:
-    """Like _resolve, but returns None instead of raising if nothing is found."""
-    try:
-        return _resolve(name, candidates)
-    except FileNotFoundError:
-        return None
-
-
-# NMO is only required for the "core" fragment; resolution is deferred to run time.
-_NMO_CANDIDATES = [
-    "/home/zinzin2312/repos/nemo/nmo",
-    "/Users/duynhu/.appimages/nemo_v0.7.1_aarch64-apple-darwin/nmo",
-]
-
-# VAL Parser is optional; validation is skipped gracefully when not found.
-_PARSER_CANDIDATES = [
-    "/home/zinzin2312/repos/Val-20211204.1-Linux/bin/Parser",
-]
-
-FAST_DOWNWARD = _resolve(
-    "Fast Downward",
-    [
-        "/home/zinzin2312/repos/downward/fast-downward.py",
-        "/Users/duynhu/repos/downward/fast-downward.py",
-    ],
-)
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Internal scripts
@@ -214,6 +177,7 @@ def compile_instance(
     variant: Optional[str],
     task: str,
     element: str,
+    tools: Tools,
     tseitin_mode: str = "both",
 ) -> None:
     owl = owl_path(fragment, task, element)
@@ -238,7 +202,7 @@ def compile_instance(
         in_problem=in_problem,
         out_domain=out_domain,
         out_problem=out_problem,
-        clipper_path=CLIPPER,
+        clipper_path=tools.clipper,
     )
 
     if fragment != "ekab":
@@ -246,15 +210,17 @@ def compile_instance(
         if fragment == "horn":
             compile_kwargs["dl_lite_fragment"] = "horn"
         else:  # core
-            nmo = _try_resolve("Nemo (nmo)", _NMO_CANDIDATES)
-            if nmo is None:
+            if tools.nmo is None:
                 print(
                     f"Skipping [{fragment}/{variant}] {task}/{element}: "
-                    "Nemo (nmo) not found. Add its path to _NMO_CANDIDATES.",
+                    "Nemo (nmo) not found. Pass --nmo, set it in tools.toml, "
+                    "or put nmo on PATH.",
                     file=sys.stderr,
                 )
                 return
-            compile_kwargs.update(dl_lite_fragment="core", rls_path=RLS, nmo_path=nmo)
+            compile_kwargs.update(
+                dl_lite_fragment="core", rls_path=RLS, nmo_path=tools.nmo
+            )
         compile_kwargs.update(
             updating_pred_type=config.updating_pred_type,
             incompatible_update_pred_type=config.incompatible_update_pred_type,
@@ -292,17 +258,20 @@ def compile_instance(
                 keep_name=True,
             )
 
-    val = _try_resolve("VAL Parser", _PARSER_CANDIDATES)
-    if val is not None:
+    if tools.val is not None:
         if tseitin_mode in ("none", "both"):
-            validate_pddl(out_domain, out_problem, val)
+            validate_pddl(out_domain, out_problem, tools.val)
         if do_tseitin:
-            validate_pddl(ts_domain, ts_problem, val)
+            validate_pddl(ts_domain, ts_problem, tools.val)
     else:
-        print("Skipping validation: VAL Parser not found. Add its path to _PARSER_CANDIDATES.", file=sys.stderr)
+        print(
+            "Skipping validation: VAL Parser not found. Pass --val, set it in "
+            "tools.toml, or put Parser on PATH.",
+            file=sys.stderr,
+        )
 
 
-def parse_args() -> tuple[list[str], list[str], list[str], bool, str]:
+def parse_args() -> tuple[list[str], list[str], list[str], bool, str, Tools]:
     parser = argparse.ArgumentParser(
         description="Generate compiled PDDL benchmarks.",
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -370,7 +339,31 @@ def parse_args() -> tuple[list[str], list[str], list[str], bool, str]:
             "'only' = tseitin only, 'both' = both (default: both)"
         ),
     )
+    tool_args = parser.add_argument_group(
+        "external tools",
+        "Each tool is looked up in this order: the option below, the [tools] "
+        "table of the config file, then PATH.",
+    )
+    tool_args.add_argument(
+        "--config",
+        metavar="FILE",
+        help="TOML file with tool paths (default: tools.toml in the repo root, "
+        "if present; see tools.example.toml)",
+    )
+    tool_args.add_argument("--clipper", metavar="PATH", help="patched clipper.sh")
+    tool_args.add_argument("--nmo", metavar="PATH", help="Nemo binary (core fragment only)")
+    tool_args.add_argument("--val", metavar="PATH", help="VAL Parser binary (optional)")
     args = parser.parse_args()
+
+    try:
+        config = load_config(args.config)
+        tools = Tools(
+            clipper=require_tool("clipper", args.clipper, config),
+            nmo=find_tool("nmo", args.nmo, config),
+            val=find_tool("val", args.val, config),
+        )
+    except (FileNotFoundError, ValueError) as e:
+        parser.error(str(e))
 
     fragments = ALL_FRAGMENTS if args.all_fragments else args.fragments
     # --all-fragments activates benchmark-suite mode: var0 and var3 only for core/horn.
@@ -383,11 +376,11 @@ def parse_args() -> tuple[list[str], list[str], list[str], bool, str]:
     tasks = ALL_TASKS if args.all_tasks else args.tasks
     # filter_tasks: when True, main() restricts each fragment to its supported tasks.
     filter_tasks = args.all_tasks
-    return fragments, variants, tasks, filter_tasks, args.tseitin
+    return fragments, variants, tasks, filter_tasks, args.tseitin, tools
 
 
 def main() -> None:
-    fragments, variants, tasks, filter_tasks, tseitin_mode = parse_args()
+    fragments, variants, tasks, filter_tasks, tseitin_mode, tools = parse_args()
     for fragment in fragments:
         # "ekab" has no update semantics — no variant dimension applies.
         effective_variants: list[Optional[str]] = [None] if fragment == "ekab" else variants
@@ -398,7 +391,9 @@ def main() -> None:
                 for element in TASK_ELEMENTS[task]:
                     label = f"{fragment}/{variant}" if variant else fragment
                     print(f"  [{label}] {task} / {element}")
-                    compile_instance(fragment, variant, task, element, tseitin_mode=tseitin_mode)
+                    compile_instance(
+                        fragment, variant, task, element, tools, tseitin_mode=tseitin_mode
+                    )
 
 
 if __name__ == "__main__":

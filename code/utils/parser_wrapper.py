@@ -1,11 +1,15 @@
 import argparse
+import os
 import subprocess
 
-DEFAULT_PARSER_PATH = "/home/zinzin2312/repos/Val-20211204.1-Linux/bin/Parser"
+from utils.tools import require_tool
+
 LOG_FOLDER = "logs"
 
 
-def validate_pddl(domain: str, problem: str, parser_path: str = DEFAULT_PARSER_PATH) -> None:
+def validate_pddl(domain: str, problem: str, parser_path: str | None = None) -> None:
+    """Run VAL's Parser on domain/problem; parser_path defaults to tools.toml, then PATH."""
+    parser_path = require_tool("val", parser_path)
     process = subprocess.Popen(
         [parser_path, domain, problem],
         stdout=subprocess.PIPE,
@@ -29,6 +33,7 @@ def validate_pddl(domain: str, problem: str, parser_path: str = DEFAULT_PARSER_P
         print("\033[92mNo errors found!\033[0m")
     # print("\033[93m =============================== END OF OUTPUT ====================================\033[0m")
 
+    os.makedirs(LOG_FOLDER, exist_ok=True)
     with open(f"{LOG_FOLDER}/parser_output.log", "a") as f:
         f.write(f"{timestamp}\n")
         f.write(f"File: {domain} and {problem}\n")
@@ -40,6 +45,8 @@ if __name__ == "__main__":
     arg_parser = argparse.ArgumentParser()
     arg_parser.add_argument("domain")
     arg_parser.add_argument("problem")
-    arg_parser.add_argument("--parser", default=DEFAULT_PARSER_PATH)
+    arg_parser.add_argument(
+        "--parser", default=None, help="VAL Parser binary (default: tools.toml, then PATH)"
+    )
     args = arg_parser.parse_args()
     validate_pddl(args.domain, args.problem, args.parser)

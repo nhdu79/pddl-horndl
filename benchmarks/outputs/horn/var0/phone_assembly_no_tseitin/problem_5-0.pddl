@@ -36,5 +36,5 @@
        (screen screen_5)
        (battery battery_5)
        (processor processor_5))
-(:goal (and (forall (?p - object) (or (and (DATALOG_FULLYEQUIPPED ?p) (or (and (DATALOG_WARRANTYCLAIM ?p) (not (DATALOG_HASDEFECT ?p))) (not (underwarranty ?p)))) (not (phone ?p)))) (not (updating))))
+(:goal (and (forall (?p) (or (and (DATALOG_FULLYEQUIPPED ?p) (or (and (DATALOG_WARRANTYCLAIM ?p) (not (DATALOG_HASDEFECT ?p))) (not (underwarranty ?p)))) (not (phone ?p)))) (not (updating))))
 )

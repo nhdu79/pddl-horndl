@@ -10,5 +10,5 @@
        (processor processor_1)
        (processorinstalledin processor_1 phone_1)
        (screen spare_screen_1))
-(:goal (and (forall (?p - object) (or (and (DATALOG_FULLYEQUIPPED ?p) (or (and (DATALOG_WARRANTYCLAIM ?p) (not (DATALOG_HASDEFECT ?p))) (not (underwarranty ?p)))) (not (phone ?p)))) (not (updating))))
+(:goal (and (forall (?p) (or (and (DATALOG_FULLYEQUIPPED ?p) (or (and (DATALOG_WARRANTYCLAIM ?p) (not (DATALOG_HASDEFECT ?p))) (not (underwarranty ?p)))) (not (phone ?p)))) (not (updating))))
 )

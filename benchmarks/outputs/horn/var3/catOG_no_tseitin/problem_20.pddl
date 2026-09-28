@@ -37,5 +37,5 @@
        (contains bm bg)
        (contains aa bj)
        (contains af at))
-(:goal (and (forall (?x - object) (or (disarmed ?x) (not (DATALOG_PACKAGE ?x)))) (not (updating))))
+(:goal (and (forall (?x) (or (disarmed ?x) (not (DATALOG_PACKAGE ?x)))) (not (updating))))
 )

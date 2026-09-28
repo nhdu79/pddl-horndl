@@ -10,6 +10,7 @@ from variant_options import (
 )
 
 from compilation import compile_pddl
+from utils.tools import load_config, require_tool
 
 
 def main():
@@ -18,7 +19,11 @@ def main():
     parser.add_argument("domain")
     parser.add_argument("problem")
     parser.add_argument("--rls", default="")
-    parser.add_argument("--nmo", default="")
+    parser.add_argument(
+        "--nmo",
+        default=None,
+        help="Nemo binary; only used with --rls (default: tools.toml, then PATH)",
+    )
     parser.add_argument(
         "--dl-lite-fragment",
         default="core",
@@ -35,7 +40,16 @@ def main():
         default=INCOMPATIBLE_UPDATE,
     )
     parser.add_argument("--clipper-mqf", default=False, action="store_true")
-    parser.add_argument("--clipper", default="clipper.sh")
+    parser.add_argument(
+        "--clipper",
+        default=None,
+        help="patched clipper.sh (default: tools.toml, then PATH)",
+    )
+    parser.add_argument(
+        "--config",
+        default=None,
+        help="TOML file with tool paths (default: tools.toml in the repo root)",
+    )
     parser.add_argument("--out-domain", "-d", default="domain.pddl")
     parser.add_argument("--out-problem", "-p", default="problem.pddl")
     parser.add_argument("--verbose", "-v", default=False, action="store_true")
@@ -57,6 +71,13 @@ def main():
         )
         sys.exit(1)
 
+    try:
+        config = load_config(args.config)
+        clipper = require_tool("clipper", args.clipper, config)
+        nmo = require_tool("nmo", args.nmo, config) if args.rls else ""
+    except (FileNotFoundError, ValueError) as e:
+        parser.error(str(e))
+
     with open(args.output_csv, "a") as f:
         f.write(args.benchmark_name + ",")
 
@@ -66,11 +87,11 @@ def main():
         in_problem=args.problem,
         out_domain=args.out_domain,
         out_problem=args.out_problem,
-        clipper_path=args.clipper,
+        clipper_path=clipper,
         clipper_mqf=args.clipper_mqf,
         dl_lite_fragment=args.dl_lite_fragment,
         rls_path=args.rls,
-        nmo_path=args.nmo,
+        nmo_path=nmo,
         updating_pred_type=args.updating_pred_type,
         incompatible_update_pred_type=args.incompatible_update_pred_type,
         filter_unimportant=not args.no_filter_unimportant,

@@ -43,5 +43,5 @@
        (directlyafterobj bk bl)
        (directlyafterobj bl bm)
        (directlyafterobj bm bn))
-(:goal (and (exists (?receipt ?fullTrip - object) (DATALOG_QUERY0 ?fullTrip ?receipt)) (not (updating))))
+(:goal (and (exists (?receipt ?fullTrip) (DATALOG_QUERY0 ?fullTrip ?receipt)) (not (updating))))
 )

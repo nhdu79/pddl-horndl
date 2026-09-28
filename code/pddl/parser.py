@@ -5,7 +5,7 @@ import argparse
 from pddl.domain import Domain
 from pddl.logic import *
 from pddl.problem import Problem
-from utils.helpers import parse_name
+from utils.helpers import normalize_user_name
 
 SUPPORTED_FEATURES = [
     ":strips",
@@ -412,7 +412,7 @@ def parse_domain(content, preserve_predicate_names=False):
             while True:
                 name = tokens.next()
                 if not preserve_predicate_names:
-                    name = parse_name(name)
+                    name = normalize_user_name(name)
                 predicate = Predicate(name, parse_typed_list(tokens))
                 result.predicates.append(predicate)
                 assert not tokens.empty()
@@ -426,7 +426,7 @@ def parse_domain(content, preserve_predicate_names=False):
         elif t == ":derived":
             name = tokens.next()
             if not preserve_predicate_names:
-                name = parse_name(name)
+                name = normalize_user_name(name)
             p = Predicate(name, parse_typed_list(tokens))
             cond = simplify(parse_condition(tokens))
             assert tokens.get() == ")"

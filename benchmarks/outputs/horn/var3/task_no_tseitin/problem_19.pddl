@@ -12,5 +12,5 @@
        (developer o)
        (developer q)
        (engineer s))
-(:goal (and (exists (?x ?y - object) (and (DATALOG_QUERY0 ?x ?y) (not (= ?x ?y)))) (not (updating))))
+(:goal (and (exists (?x ?y) (and (DATALOG_QUERY0 ?x ?y) (not (= ?x ?y)))) (not (updating))))
 )

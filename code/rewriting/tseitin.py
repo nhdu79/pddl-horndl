@@ -104,7 +104,7 @@ class Tseitin:
             return formula
         name = AUX_PREDICATE_NAME + str(self._derived_predicates_count)
         self._derived_predicates_count += 1
-        vars = formula.free_vars()
+        vars = sorted(formula.free_vars())  # sorted: deterministic output
         params = []
         for var in vars:
             for typed_list in reversed(par):

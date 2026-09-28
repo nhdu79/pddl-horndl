@@ -21,9 +21,6 @@ call Ontology.is_supported to check.
 
 from __future__ import annotations
 
-from rdflib import Graph, URIRef, BNode
-from rdflib.namespace import OWL, RDF, RDFS
-
 from owl.axioms import (
     ConceptInclusion,
     FunctionalRole,
@@ -32,6 +29,8 @@ from owl.axioms import (
     RoleInclusion,
 )
 from owl.expressions import (
+    OWL_NOTHING,
+    OWL_THING,
     AtomicConcept,
     AtomicRole,
     ConceptExpression,
@@ -41,12 +40,11 @@ from owl.expressions import (
     InverseRole,
     NegatedConcept,
     NegatedRole,
-    OWL_NOTHING,
-    OWL_THING,
     RoleExpression,
     _local_name,
 )
-
+from rdflib import BNode, Graph, URIRef
+from rdflib.namespace import OWL, RDF, RDFS
 
 # ---------------------------------------------------------------------------
 # Known-unsupported OWL constructs  (post-parse coverage scan)
@@ -54,19 +52,19 @@ from owl.expressions import (
 
 # Property characteristic types beyond owl:ObjectProperty that carry axiom semantics
 _UNSUPPORTED_PROP_TYPES: list[tuple] = [
-    (OWL.DatatypeProperty,    "owl:DatatypeProperty"),
-    (OWL.TransitiveProperty,  "owl:TransitiveProperty"),
-    (OWL.AsymmetricProperty,  "owl:AsymmetricProperty"),
-    (OWL.ReflexiveProperty,   "owl:ReflexiveProperty"),
+    (OWL.DatatypeProperty, "owl:DatatypeProperty"),
+    (OWL.TransitiveProperty, "owl:TransitiveProperty"),
+    (OWL.AsymmetricProperty, "owl:AsymmetricProperty"),
+    (OWL.ReflexiveProperty, "owl:ReflexiveProperty"),
     (OWL.IrreflexiveProperty, "owl:IrreflexiveProperty"),
 ]
 
 # Axiom-forming predicates not iterated by any collection method
 _UNSUPPORTED_AXIOM_PREDS: list[tuple] = [
-    (OWL.equivalentClass,    "owl:equivalentClass"),
+    (OWL.equivalentClass, "owl:equivalentClass"),
     (OWL.equivalentProperty, "owl:equivalentProperty"),
     (OWL.propertyChainAxiom, "owl:propertyChainAxiom"),
-    (OWL.hasKey,             "owl:hasKey"),
+    (OWL.hasKey, "owl:hasKey"),
 ]
 # owl:inverseOf on a named property (:P owl:inverseOf :Q) is unsupported.
 # The blank-node form [owl:inverseOf :P] inside rdfs:subPropertyOf IS supported
@@ -74,34 +72,35 @@ _UNSUPPORTED_AXIOM_PREDS: list[tuple] = [
 
 # Meta-class types whose instances represent ignored axioms
 _UNSUPPORTED_META_TYPES: list[tuple] = [
-    (OWL.AllDisjointClasses,        "owl:AllDisjointClasses"),
-    (OWL.AllDisjointProperties,     "owl:AllDisjointProperties"),
+    (OWL.AllDisjointClasses, "owl:AllDisjointClasses"),
+    (OWL.AllDisjointProperties, "owl:AllDisjointProperties"),
     (OWL.NegativePropertyAssertion, "owl:NegativePropertyAssertion"),
 ]
 
 # Class-expression predicates detected inside _resolve_concept
 _UNSUPPORTED_CLASS_EXPRS: list[tuple] = [
-    (OWL.unionOf,      "owl:unionOf"),
+    (OWL.unionOf, "owl:unionOf"),
     (OWL.complementOf, "owl:complementOf"),
-    (OWL.oneOf,        "owl:oneOf"),
+    (OWL.oneOf, "owl:oneOf"),
 ]
 
 # Restriction predicates other than owl:someValuesFrom
 _UNSUPPORTED_RESTRICTIONS: list[tuple] = [
-    (OWL.allValuesFrom,           "owl:allValuesFrom"),
-    (OWL.hasValue,                "owl:hasValue"),
-    (OWL.maxCardinality,          "owl:maxCardinality"),
-    (OWL.minCardinality,          "owl:minCardinality"),
-    (OWL.cardinality,             "owl:cardinality"),
+    (OWL.allValuesFrom, "owl:allValuesFrom"),
+    (OWL.hasValue, "owl:hasValue"),
+    (OWL.maxCardinality, "owl:maxCardinality"),
+    (OWL.minCardinality, "owl:minCardinality"),
+    (OWL.cardinality, "owl:cardinality"),
     (OWL.maxQualifiedCardinality, "owl:maxQualifiedCardinality"),
     (OWL.minQualifiedCardinality, "owl:minQualifiedCardinality"),
-    (OWL.qualifiedCardinality,    "owl:qualifiedCardinality"),
+    (OWL.qualifiedCardinality, "owl:qualifiedCardinality"),
 ]
 
 
 # ---------------------------------------------------------------------------
 # Internal builder
 # ---------------------------------------------------------------------------
+
 
 class _OWLBuilder:
     """Walks an rdflib Graph and populates an Ontology."""
@@ -123,11 +122,11 @@ class _OWLBuilder:
     def build(self) -> Ontology:
         self._collect_ontology_iri()
         self._collect_atomic_concepts()  # concept(?X), atomic(?X) + negOf
-        self._collect_atomic_roles()     # role(?P), atomic(?P) + invOf + negOf + domOf + rngOf
-        self._collect_role_axioms()      # funct, invFunct, symmetric, subPropertyOf, domain, range
-        self._collect_concept_axioms()   # subClassOf, disjointWith on named subjects
-        self._collect_general_axioms()   # subClassOf, disjointWith on blank-node subjects
-        self._scan_unsupported()         # warn about constructs outside the supported fragment
+        self._collect_atomic_roles()  # role(?P), atomic(?P) + invOf + negOf + domOf + rngOf
+        self._collect_role_axioms()  # funct, invFunct, symmetric, subPropertyOf, domain, range
+        self._collect_concept_axioms()  # subClassOf, disjointWith on named subjects
+        self._collect_general_axioms()  # subClassOf, disjointWith on blank-node subjects
+        self._scan_unsupported()  # warn about constructs outside the supported fragment
         self._deduplicate_axioms()
         return self._onto
 
@@ -233,7 +232,9 @@ class _OWLBuilder:
             for range_node in self._g.objects(node, RDFS.range):
                 sup = self._resolve_concept(range_node)
                 if sup is not None:
-                    self._add_axiom(ConceptInclusion(InverseExistentialConcept(role), sup))
+                    self._add_axiom(
+                        ConceptInclusion(InverseExistentialConcept(role), sup)
+                    )
 
     def _collect_concept_axioms(self) -> None:
         """
@@ -337,9 +338,13 @@ class _OWLBuilder:
             return ExistentialConcept(role)
         for pred_uri, label in _UNSUPPORTED_RESTRICTIONS:
             if (node, pred_uri, None) in self._g:
-                self._warn(f"unsupported OWL restriction {label} — axiom containing it ignored")
+                self._warn(
+                    f"unsupported OWL restriction {label} — axiom containing it ignored"
+                )
                 return None
-        self._warn("unsupported owl:Restriction (no recognized filler predicate) — axiom ignored")
+        self._warn(
+            "unsupported owl:Restriction (no recognized filler predicate) — axiom ignored"
+        )
         return None
 
     def _resolve_intersection(self, list_head) -> ConceptExpression | None:
@@ -350,7 +355,9 @@ class _OWLBuilder:
             if op is not None
         )
         if len(operands) < 2:
-            self._warn("owl:intersectionOf with fewer than 2 resolvable operands — axiom ignored")
+            self._warn(
+                "owl:intersectionOf with fewer than 2 resolvable operands — axiom ignored"
+            )
             return None
         return IntersectionConcept(operands)
 
@@ -359,7 +366,9 @@ class _OWLBuilder:
             # Support [owl:inverseOf :P] as an inline inverse-role expression.
             inverse_of = self._g.value(node, OWL.inverseOf)
             if inverse_of is not None:
-                inner = self._roles_by_iri.get(str(inverse_of)) or AtomicRole(str(inverse_of))
+                inner = self._roles_by_iri.get(str(inverse_of)) or AtomicRole(
+                    str(inverse_of)
+                )
                 return InverseRole(inner)
             self._warn("anonymous (blank-node) role expression — axiom ignored")
             return None
@@ -414,7 +423,9 @@ class _OWLBuilder:
                 key = str(s)
                 if key not in seen:
                     seen.add(key)
-                    subject_repr = _local_name(key) if isinstance(s, URIRef) else "anonymous"
+                    subject_repr = (
+                        _local_name(key) if isinstance(s, URIRef) else "anonymous"
+                    )
                     self._warn(
                         f"unsupported axiom predicate {label} on "
                         f"<{subject_repr}> — axiom ignored"
@@ -439,6 +450,7 @@ class _OWLBuilder:
 # ---------------------------------------------------------------------------
 # Public API
 # ---------------------------------------------------------------------------
+
 
 def parse_owl(path: str) -> Ontology:
     """Parse an OWL Turtle file and return a normalised Ontology."""

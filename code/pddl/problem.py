@@ -31,6 +31,6 @@ class Problem:
         objects = {t: list() for t in type_relation.keys()}
         if self.objects != None:
             for tl in self.objects:
-                for super_type in type_relation.get(tl.type, []):
+                for super_type in type_relation.get(tl.type or "object", []):
                     objects[super_type].extend(tl.elements)
         return objects

@@ -23,5 +23,5 @@
        (next k o)
        (next o p)
        (liftat i))
-(:goal (and (forall (?x - object) (or (served ?x) (not (DATALOG_PASSENGER ?x)))) (not (updating))))
+(:goal (and (forall (?x) (or (served ?x) (not (DATALOG_PASSENGER ?x)))) (not (updating))))
 )

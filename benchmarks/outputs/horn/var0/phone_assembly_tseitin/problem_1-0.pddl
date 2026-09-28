@@ -10,5 +10,5 @@
        (processor processor_1)
        (processorinstalledin processor_1 phone_1)
        (screen spare_screen_1))
-(:goal (and (forall (?p - object) (AUX26 ?p)) (not (updating))))
+(:goal (and (forall (?p) (AUX26 ?p)) (not (updating))))
 )

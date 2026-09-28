@@ -1,14 +1,17 @@
-Subject: [PATCH] support multiple queries with the same body
+From 8fefebf75530d5be10f9bdf474858905c6dd8ddb Mon Sep 17 00:00:00 2001
+From: Duy Nhu <duy.nhu.040197@gmail.com>
+Date: Mon, 28 Sep 2026 09:51:49 +0200
+Subject: [PATCH 2/2] Support multiple queries with the same body
+
 ---
-Index: clipper-reasoner/src/main/java/org/semanticweb/clipper/hornshiq/queryanswering/QAHornSHIQ.java
-IDEA additional info:
-Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
-<+>UTF-8
-===================================================================
+ .../clipper/hornshiq/queryanswering/QAHornSHIQ.java         | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
 diff --git a/clipper-reasoner/src/main/java/org/semanticweb/clipper/hornshiq/queryanswering/QAHornSHIQ.java b/clipper-reasoner/src/main/java/org/semanticweb/clipper/hornshiq/queryanswering/QAHornSHIQ.java
---- a/clipper-reasoner/src/main/java/org/semanticweb/clipper/hornshiq/queryanswering/QAHornSHIQ.java	(revision b81d0c84eb5853cb31a38260bd53fb35436f0fa2)
-+++ b/clipper-reasoner/src/main/java/org/semanticweb/clipper/hornshiq/queryanswering/QAHornSHIQ.java	(date 1743073292475)
-@@ -173,8 +173,8 @@
+index 38c4433..5c66475 100644
+--- a/clipper-reasoner/src/main/java/org/semanticweb/clipper/hornshiq/queryanswering/QAHornSHIQ.java
++++ b/clipper-reasoner/src/main/java/org/semanticweb/clipper/hornshiq/queryanswering/QAHornSHIQ.java
+@@ -171,8 +171,8 @@ public class QAHornSHIQ implements QueryAnsweringSystem {
  	private void reduceRewrittenQueriesToDatalog(TBoxReasoner tb) throws IOException {
  		long starCountingRelatedRule = System.currentTimeMillis();
  
@@ -19,7 +22,7 @@ diff --git a/clipper-reasoner/src/main/java/org/semanticweb/clipper/hornshiq/que
  		relatedRules.setCoreImps(tb.getImpContainer().getImps());
  		relatedRules.setCoreEnfs(tb.getEnfContainer().getEnfs());
  		relatedRules.countUCQRelatedRules();
-@@ -214,7 +214,7 @@
+@@ -212,7 +212,7 @@ public class QAHornSHIQ implements QueryAnsweringSystem {
  	 * @author Steffen Breuer
  	 **/
  	public Collection<String> rewriteCQs(Collection<CQ> rawQueries) {
@@ -28,3 +31,6 @@ diff --git a/clipper-reasoner/src/main/java/org/semanticweb/clipper/hornshiq/que
  
  		try {
  			preprocessOntologies();
+-- 
+2.43.0
+

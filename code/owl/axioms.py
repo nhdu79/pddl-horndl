@@ -18,6 +18,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 
 from owl.expressions import (
+    OWL_NOTHING,
+    OWL_THING,
     AtomicConcept,
     AtomicRole,
     ConceptExpression,
@@ -27,19 +29,18 @@ from owl.expressions import (
     InverseRole,
     NegatedConcept,
     NegatedRole,
-    OWL_NOTHING,
-    OWL_THING,
     RoleExpression,
 )
-
 
 # ---------------------------------------------------------------------------
 # Axiom types
 # ---------------------------------------------------------------------------
 
+
 @dataclass
 class ConceptInclusion:
     """sub(X, Y) for concept expressions."""
+
     sub: ConceptExpression
     sup: ConceptExpression
 
@@ -54,6 +55,7 @@ class ConceptInclusion:
 @dataclass
 class RoleInclusion:
     """sub(P, Q) for role expressions; arises from rdfs:subPropertyOf."""
+
     sub: RoleExpression
     sup: RoleExpression
 
@@ -68,6 +70,7 @@ class RoleInclusion:
 @dataclass
 class FunctionalRole:
     """funct(P); from rdf:type owl:FunctionalProperty."""
+
     role: AtomicRole
 
     @property
@@ -81,6 +84,7 @@ class FunctionalRole:
 @dataclass
 class InverseFunctionalRole:
     """invFunct(P); from rdf:type owl:InverseFunctionalProperty."""
+
     role: AtomicRole
 
     @property
@@ -94,6 +98,7 @@ class InverseFunctionalRole:
 # ---------------------------------------------------------------------------
 # DL notation rendering  (used by Ontology.print_ontology)
 # ---------------------------------------------------------------------------
+
 
 def _dl_concept(expr: ConceptExpression) -> str:
     """Render a concept expression in standard DL notation."""
@@ -110,8 +115,8 @@ def _dl_concept(expr: ConceptExpression) -> str:
     if isinstance(expr, NegatedConcept):
         inner = _dl_concept(expr.concept)
         if isinstance(expr.concept, IntersectionConcept):
-            return f"¬({inner})"            # ¬(A ⊓ B) — parens needed
-        return f"¬{inner}"                  # ¬A
+            return f"¬({inner})"  # ¬(A ⊓ B) — parens needed
+        return f"¬{inner}"  # ¬A
     if isinstance(expr, IntersectionConcept):
         return " ⊓ ".join(_dl_concept(op) for op in expr.operands)
     return str(expr)
@@ -145,6 +150,7 @@ def _dl_axiom(ax) -> str:
 # Ontology container
 # ---------------------------------------------------------------------------
 
+
 @dataclass
 class Ontology:
     """
@@ -160,6 +166,7 @@ class Ontology:
     warnings  — messages for OWL constructs that were outside the supported
                 fragment and silently skipped during parsing.
     """
+
     iri: str
     concepts: dict[str, ConceptExpression] = field(default_factory=dict)
     roles: dict[str, RoleExpression] = field(default_factory=dict)
@@ -208,9 +215,13 @@ class Ontology:
         """Print TBox axioms in Description Logics notation."""
         print(f"Ontology: {self.iri}")
 
-        role_incls    = [ax for ax in self.axioms if isinstance(ax, RoleInclusion)]
+        role_incls = [ax for ax in self.axioms if isinstance(ax, RoleInclusion)]
         concept_incls = [ax for ax in self.axioms if isinstance(ax, ConceptInclusion)]
-        functionals   = [ax for ax in self.axioms if isinstance(ax, (FunctionalRole, InverseFunctionalRole))]
+        functionals = [
+            ax
+            for ax in self.axioms
+            if isinstance(ax, (FunctionalRole, InverseFunctionalRole))
+        ]
 
         if role_incls:
             print("  Role inclusions:")
@@ -231,6 +242,8 @@ class Ontology:
             print("  (no axioms)")
 
         if self.warnings:
-            print(f"  Warnings — {len(self.warnings)} unsupported construct(s) ignored:")
+            print(
+                f"  Warnings — {len(self.warnings)} unsupported construct(s) ignored:"
+            )
             for w in self.warnings:
                 print(f"    ! {w}")

@@ -1,23 +1,24 @@
 ## Prerequisite:
 
 The following software is required for running `generate_pddl.py`, which generates the compiled PDDL files for the benchmarks:
-- Patched version of Clipper (with `clipper.patch`)
+- Patched version of Clipper (with the two patches in `patches/`)
 - Nemo (required for the `core` fragment only)
-- Fast Downward
+- Fast Downward (for planning on the generated files)
 - VAL Parser (optional — used for PDDL validation; compilation proceeds without it)
 
 ## Installation Instructions:
 #### Clipper:
-* Clone the repo:
+* Clone the repo (the patches apply to upstream `master`, commit `23153e9`):
 ```sh
   $ git clone https://github.com/ghxiao/clipper
+  $ cd clipper
 ```
-* Copy the `clipper.patch` in this repo to the Clipper repo (above)
-* Apply the patches (2 patches need to be applied):
+* Apply the two patches from this repo's `patches/` folder, in this order:
 ```sh
-  $ git am --keep-cr --signoff < clipper.patch
-  $ git am --keep-cr --signoff < support_multiple_queries_with_the_same_body.patch
+  $ git am --keep-cr --signoff < /path/to/pddl-horndl/patches/clipper.patch
+  $ git am --keep-cr --signoff < /path/to/pddl-horndl/patches/support_multiple_queries_with_the_same_body.patch
 ```
+  (`git apply <patch>` works too if you do not want the patches as commits.)
 * Within the Clipper repo, build from source:
 ```sh
   $ ./build.sh
@@ -28,7 +29,7 @@ The following software is required for running `generate_pddl.py`, which generat
 * (From [Nemo](https://github.com/knowsys/nemo) repo): The fastest way to run Nemo is to use system-specific binaries of our command-line client. Archives with pre-compiled binaries for various platforms are available from the Nemo releases page
   - Download a precompiled binary from releases: https://github.com/knowsys/nemo/releases
   - Extract `tar -xvf [your-chosen-nemo-release].tar`
-* There will be a binary `nmo` file in the extracted folder; add its full path to `_NMO_CANDIDATES` in `generate_pddl.py`
+* There will be a binary `nmo` file in the extracted folder; add its full path to `tools.toml` (see below)
 
 #### Fast Downward:
 * Detailed installation on [the official Webpage](https://www.fast-downward.org/latest/documentation/quick-start/)
@@ -37,10 +38,20 @@ The following software is required for running `generate_pddl.py`, which generat
 ## Running the compilation (`generate_pddl.py`):
 
 #### Configuring the corresponding paths in your system:
-* `generate_pddl.py` automatically detects tool paths by trying a list of known locations in order. Add your machine's paths to the relevant candidate lists near the top of the script if they are not already present:
-  * `CLIPPER` — required for all runs.
-  * `_NMO_CANDIDATES` — required for the `core` fragment only; `horn`-only runs work without Nemo.
-  * `_PARSER_CANDIDATES` — optional; if the [VAL](https://github.com/KCL-Planning/VAL) Parser binary is not found, PDDL validation is skipped with a warning and compilation still completes.
+Each external tool is looked up in this order:
+1. the command-line option: `--clipper`, `--nmo`, `--val` (and `--config FILE` to use a different config file);
+2. the `[tools]` table of `tools.toml` in the repo root (git-ignored; copy `tools.example.toml` to start);
+3. the executable's usual name on `PATH`: `clipper.sh`, `nmo`, `Parser`.
+
+```sh
+cp tools.example.toml tools.toml   # then edit the paths
+```
+
+* `clipper` — required for all runs.
+* `nmo` — required for the `core` fragment only; `horn`/`ekab` runs work without Nemo.
+* `val` — optional; if the [VAL](https://github.com/KCL-Planning/VAL) Parser binary is not found, PDDL validation is skipped with a warning and compilation still completes.
+
+The same lookup is used by `python3 -m compilation` (`--clipper`, `--nmo`, `--config`) and `code/utils/parser_wrapper.py` (`--parser`).
 
 #### Basic usage:
 ```sh
@@ -99,6 +110,21 @@ Available variants: `var0`, `var1`, `var2`, `var3`
 ## The Benchmark folder:
 * Input PDDL and OWL files are stored under `benchmarks/inputs/<fragment>/<task>/`, one directory per fragment (`core`, `ekab`, `horn`). For example, `benchmarks/inputs/horn/blocks/` holds the Horn-specific blocks inputs.
 * Outputs are stored in `benchmarks/outputs/<fragment>/<variant>/<task>/` for `core`/`horn`, and `benchmarks/outputs/ekab/<task>/` for `ekab`.
+
+#### Notes on input/output PDDL
+* Typed input domains are supported: `:types`, typed parameters and domain `:constants` are kept as declared. Untyped input stays untyped (no implicit `object` type is added).
+* Variables quantified *inside* an `mko` query must be untyped (Clipper has no notion of PDDL types); model the type as an ontology concept instead.
+* Problem `:objects` are moved into the domain's `:constants` (the compiled derived predicates may mention them), next to any constants the input domain already declares.
+* The output `:requirements` are inferred from the compiled domain (e.g. `:derived-predicates`, `:negative-preconditions`, `:conditional-effects`).
+* Compilation is deterministic: the same inputs always produce byte-identical outputs.
+* Names are matched case-insensitively: `onBlock` in the PDDL files and `OnBlock` in the OWL file are the same predicate. Internally every name is lowercased and stripped of `_`/`-` (`onblock`), which is also how Clipper writes its Datalog output. Because that would silently merge spellings like `on_block` and `onBlock`, such mixes are rejected (see below): use one spelling per name, up to letter case.
+* Clipper itself is case-sensitive when *reading* names: a query atom must be spelled exactly like the OWL name, or Clipper silently drops it. The compiler takes care of this: it sends query atoms in their exact OWL spelling and declares PDDL-only query predicates to Clipper. Note that Clipper's `-name` option (e.g. `-name FRAGMENT` to keep case) has no effect, due to an upstream bug; the compiler relies on the default lowercase output anyway.
+* Before compiling, the compiler checks names and stops with a `NameClashError` if:
+  * different spellings of the same name are mixed (e.g. declaring `onBlock` but using `on_block`);
+  * two OWL names differ only in letter case (e.g. `Block` and `block`), which PDDL cannot tell apart;
+  * an OWL name contains characters other than letters, digits, `_` and `-` (e.g. `.`);
+  * a name is reserved: `inconsistent`, `nothing`, `query<N>`, `updating`, `exists<role>`/`existsinv<role>` (horn), and the action name `update`.
+* `mko` queries may mix ontology predicates with PDDL-only predicates.
 
 ## Mapping from Benchmark names in paper to folder names:
 

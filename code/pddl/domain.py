@@ -45,7 +45,7 @@ class Domain:
         if self.types != None:
             for tl in self.types:
                 for t in tl.elements:
-                    type_relation[t] = tl.type
+                    type_relation[t] = tl.type or "object"
         closure = {"object": ["object"]}
         for t in type_relation:
             closure[t] = [t]
@@ -63,6 +63,6 @@ class Domain:
         constants["object"] = list()
         if self.constants != None:
             for tl in self.constants:
-                for super_type in type_relation.get(tl.type, []):
+                for super_type in type_relation.get(tl.type or "object", []):
                     constants[super_type].extend(tl.elements)
         return constants

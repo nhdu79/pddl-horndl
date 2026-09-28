@@ -45,5 +45,5 @@
        (contains bm ak)
        (contains an bu)
        (contains ar aq))
-(:goal (and (forall (?x - object) (AUX5 ?x)) (not (updating))))
+(:goal (and (forall (?x) (AUX2 ?x)) (not (updating))))
 )

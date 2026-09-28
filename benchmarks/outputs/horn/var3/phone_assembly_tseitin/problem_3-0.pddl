@@ -23,5 +23,5 @@
        (screen screen_3)
        (battery battery_3)
        (processor processor_3))
-(:goal (and (forall (?p - object) (AUX29 ?p)) (not (updating))))
+(:goal (and (forall (?p) (AUX29 ?p)) (not (updating))))
 )

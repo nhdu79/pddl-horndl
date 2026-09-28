@@ -1,14 +1,21 @@
+import os
 import shutil
 
 import pddl.parser as pddl
 from rewriting.clipper import Clipper
 from variant_options import DERIVED_PREDICATE, INCOMPATIBLE_UPDATE
 
-from .pipeline import Compiler
+from .domain_transforms import (
+    ensure_requirements,
+    merge_problem_objects_into_constants,
+)
+from .names import NameClashError, OntologyNames, check_names
+from .pipeline import TEMPORARY_DECLARED_ONTOLOGY, Compiler
 from .ontology import TEMPORARY_ONTOLOGY_FILE, construct_ontology_for_clipper
 
 __all__ = [
     "compile_pddl",
+    "NameClashError",
     "Compiler",
     "construct_ontology_for_clipper",
     "TEMPORARY_ONTOLOGY_FILE",
@@ -43,6 +50,22 @@ def compile_pddl(
     from coherence_update import make_update_runner
 
     do_coherence_update = dl_lite_fragment == "horn" or bool(rls_path and nmo_path)
+
+    # Parse without normalizing names: the checks below need the spelling as
+    # written, and the Compiler normalizes every name once, up front.
+    with open(in_domain) as f:
+        domain = pddl.parse_domain(f.read(), preserve_predicate_names=True)
+    with open(in_problem) as f:
+        problem = pddl.parse_problem(f.read())
+    ontology_names = OntologyNames(ontology)
+    check_names(
+        domain,
+        problem,
+        ontology_names,
+        coherence_update=do_coherence_update,
+        horn=do_coherence_update and dl_lite_fragment == "horn",
+    )
+
     update_runner = (
         make_update_runner(
             fragment=dl_lite_fragment,
@@ -66,10 +89,6 @@ def compile_pddl(
     if shutil.which(clipper_path) is None:
         raise FileNotFoundError(f"Clipper not found: {clipper_path!r}")
     clipper = Clipper(clipper_path, ontology_file_path, clipper_mqf, debug)
-    with open(in_domain) as f:
-        domain = pddl.parse_domain(f.read())
-    with open(in_problem) as f:
-        problem = pddl.parse_problem(f.read())
 
     compiler = Compiler(
         domain,
@@ -84,11 +103,16 @@ def compile_pddl(
         task=task,
         element=element,
         tseitin=tseitin,
+        ontology_names=ontology_names,
     )
-    compiler()
+    try:
+        compiler()
+    finally:
+        if not debug and os.path.exists(TEMPORARY_DECLARED_ONTOLOGY):
+            os.remove(TEMPORARY_DECLARED_ONTOLOGY)
 
-    domain.constants = problem.objects
-    problem.objects = None
+    merge_problem_objects_into_constants(domain, problem)
+    ensure_requirements(domain, problem)
 
     if verbose:
         compiler.print_compilation_information()

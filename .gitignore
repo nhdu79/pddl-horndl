@@ -15,3 +15,8 @@ result.csv
 *.sas
 generated/
 **/__pycache__/
+
+# local tool paths (see tools.example.toml)
+tools.toml
+FIXES.md
+tools.example.toml

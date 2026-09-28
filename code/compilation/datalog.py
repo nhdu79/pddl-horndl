@@ -10,7 +10,6 @@ from compilation.naming import (
     query_predicate_name,
 )
 from pddl.logic import Predicate, TypedList
-from utils.helpers import parse_name
 
 
 def _parse_datalog_rules(
@@ -20,8 +19,11 @@ def _parse_datalog_rules(
 
     Returns (rules, duplicate_rules).
     """
-    rules = set() if filter_duplicates else []
-    duplicates = set()
+    # A dict (not a set) deduplicates while keeping Clipper's rule order, so
+    # the compiled output does not depend on string hash randomisation.
+    unique = {}
+    ordered = []
+    duplicates = []
     inconsistent_atom = datalog.Atom(INCONSISTENCY_PREDICATE_NAME, [])
 
     for dlr in raw_rules:
@@ -38,16 +40,13 @@ def _parse_datalog_rules(
         ):
             rule.head.parameters = []
         if filter_duplicates:
-            old_size = len(rules)
-            rules.add(rule)
-            if old_size == len(rules):
-                duplicates.add(rule)
-        else:
-            rules.append(rule)
+            if rule in unique:
+                duplicates.append(rule)
+                continue
+            unique[rule] = None
+        ordered.append(rule)
 
-    if filter_duplicates:
-        rules = list(rules)
-    return rules, duplicates
+    return ordered, duplicates
 
 
 def _filter_raw_rules_from_reachable_predicates(raw_rules, reachable_predicates):
@@ -125,11 +124,9 @@ def _filter_raw_rules_for_ekab(raw_rules, actions=None, initial_predicates=None)
         effect_preds: dict = {}
         _collect_effect_predicates(action.effect, effect_preds)
         for name, pred in effect_preds.items():
-            norm = parse_name(name)
-            kept_predicates.setdefault(norm, Predicate(norm, pred.parameters))
+            kept_predicates.setdefault(name, pred)
     for pred in initial_predicates or []:
-        name = parse_name(pred.name)
-        kept_predicates.setdefault(name, Predicate(name, pred.parameters))
+        kept_predicates.setdefault(pred.name, pred)
 
     kept_rules = []
     remaining = list(raw_rules)
@@ -143,12 +140,11 @@ def _filter_raw_rules_for_ekab(raw_rules, actions=None, initial_predicates=None)
                 continue
             tail = rule_str[sep_idx + len(" :- ") :]
             atoms = re.findall(r"(-?)([A-Za-z][A-Za-z0-9_]*)\(", tail)
-            positive_names = {parse_name(n) for neg, n in atoms if not neg}
+            positive_names = {n for neg, n in atoms if not neg}
             if not positive_names or positive_names.issubset(kept_predicates):
                 kept_rules.append(rule_str)
-                raw_head = _predicate_from_rule_head(rule_str[:sep_idx].strip())
-                head_name = parse_name(raw_head.name)
-                new_predicates[head_name] = Predicate(head_name, raw_head.parameters)
+                head = _predicate_from_rule_head(rule_str[:sep_idx].strip())
+                new_predicates[head.name] = head
             else:
                 new_remaining.append(rule_str)
         newly_added = set(new_predicates) - set(kept_predicates)
@@ -163,40 +159,55 @@ def _filter_raw_rules_for_ekab(raw_rules, actions=None, initial_predicates=None)
     return kept_rules, list(kept_predicates.values())
 
 
+def _body_atom_names(rule):
+    for t in rule.tail:
+        if isinstance(t, datalog.Negated):
+            t = t.element
+        if isinstance(t, datalog.Atom):
+            yield t.name
+
+
 def _filter_irrelevant_rules(rules, queried_predicates, num_ucqs, update_runner):
     """Remove Datalog rules whose heads cannot contribute to any queried predicate.
 
-    Returns (relevant_rules, irrelevant_rules).
+    Backward reachability from the predicates the compiled task actually reads:
+    the queried atoms, the QUERY_i heads and (without an update runner) the
+    inconsistency atom.  A rule is relevant iff its head is needed; the body
+    atoms of relevant rules become needed in turn.
+
+    Coherence-update rules are always kept.  Their bodies refer to the ABox
+    predicates themselves (compiled unprimed), not to the ontology-derived
+    primed predicates, so they do not make any ontology rule relevant.
+
+    Returns (relevant_rules, irrelevant_rules), both in input order.
     """
-    necessary = queried_predicates | {query_predicate_name(i) for i in range(num_ucqs)}
+
+    def is_update_rule(rule):
+        return update_runner is not None and is_coherence_update_predicate_name(
+            rule.head.name
+        )
+
+    needed = set(queried_predicates)
+    needed |= {query_predicate_name(i) for i in range(num_ucqs)}
     if not update_runner:
-        necessary = necessary | {INCONSISTENCY_PREDICATE_NAME}
+        needed.add(INCONSISTENCY_PREDICATE_NAME)
 
-    conditioned = necessary  # same object; necessary grows monotonically below
+    ontology_rules = [r for r in rules if not is_update_rule(r)]
+    changed = True
+    while changed:
+        changed = False
+        for rule in ontology_rules:
+            if rule.head.name not in needed:
+                continue
+            for name in _body_atom_names(rule):
+                if name not in needed:
+                    needed.add(name)
+                    changed = True
+
+    relevant, irrelevant = [], []
     for rule in rules:
-        for t in rule.tail:
-            if isinstance(t, datalog.Negated):
-                t = t.element
-            if isinstance(t, datalog.Atom):
-                conditioned.add(t.name)
-        if update_runner and is_coherence_update_predicate_name(rule.head.name):
-            conditioned.add(rule.head.name)
-
-    irrelevant = []
-    while True:
-        relevant = []
-        for rule in rules:
-            if rule.head.name in conditioned:
-                relevant.append(rule)
-                for t in rule.tail:
-                    if isinstance(t, datalog.Negated):
-                        t = t.element
-                    if isinstance(t, datalog.Atom):
-                        conditioned.add(t.name)
-            else:
-                irrelevant.append(rule)
-        if len(rules) == len(relevant):
-            break
-        rules = relevant
-
-    return rules, irrelevant
+        if is_update_rule(rule) or rule.head.name in needed:
+            relevant.append(rule)
+        else:
+            irrelevant.append(rule)
+    return relevant, irrelevant

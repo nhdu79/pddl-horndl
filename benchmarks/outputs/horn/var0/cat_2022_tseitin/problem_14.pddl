@@ -25,5 +25,5 @@
        (contains ay as)
        (contains bb ad)
        (contains ab af))
-(:goal (and (forall (?x - object) (AUX5 ?x)) (not (updating))))
+(:goal (and (forall (?x) (AUX2 ?x)) (not (updating))))
 )
