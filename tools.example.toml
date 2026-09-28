@@ -1,0 +1,16 @@
+# Paths to the external tools used by generate_pddl.py and `python3 -m compilation`.
+#
+# Copy this file to tools.toml (git-ignored) and adjust the paths for your machine.
+# Lookup order for each tool: command-line option (--clipper / --nmo / --val)
+# > this file > the executable's usual name on PATH.
+# Any key may be omitted to fall back to PATH.
+
+[tools]
+# Patched Clipper (see patches/); required for every run.
+clipper = "/path/to/clipper/clipper-distribution/target/clipper/clipper.sh"
+
+# Nemo binary; only required for the `core` fragment.
+nmo = "/path/to/nemo/nmo"
+
+# VAL's Parser binary; optional (PDDL validation is skipped without it).
+val = "/path/to/VAL/bin/Parser"
